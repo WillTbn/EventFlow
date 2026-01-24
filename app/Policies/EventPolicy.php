@@ -30,7 +30,7 @@ class EventPolicy
     /**
      * Determine whether the user can create events.
      */
-    public function create(User ): bool
+    public function create(User $user ): bool
     {
         return true;
     }
