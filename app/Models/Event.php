@@ -16,7 +16,7 @@ class Event extends Model
      *
      * @var list<string>
      */
-    protected  = [
+    protected $fillable = [
         'created_by',
         'title',
         'slug',
@@ -34,7 +34,7 @@ class Event extends Model
      */
     public function creator(): BelongsTo
     {
-        return ->belongsTo(User::class, 'created_by');
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**
