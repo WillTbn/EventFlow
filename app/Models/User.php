@@ -19,7 +19,7 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-    protected  = [
+    protected $fillable = [
         'name',
         'email',
         'password',
@@ -30,7 +30,7 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-    protected  = [
+    protected $hidden = [
         'password',
         'two_factor_secret',
         'two_factor_recovery_codes',
@@ -56,6 +56,6 @@ class User extends Authenticatable
      */
     public function events(): HasMany
     {
-        return ->hasMany(Event::class, 'created_by');
+        return $this->hasMany(Event::class, 'created_by');
     }
 }

@@ -17,7 +17,7 @@ class EventFactory extends Factory
      *
      * @var class-string<\App\Models\Event>
      */
-    protected  = Event::class;
+    protected $model = Event::class;
 
     /**
      * Define the model's default state.
@@ -26,17 +26,17 @@ class EventFactory extends Factory
      */
     public function definition(): array
     {
-         = fake()->sentence(4);
-         = fake()->dateTimeBetween('+1 day', '+1 month');
+        $title = fake()->sentence(4);
+        $startsAt = fake()->dateTimeBetween('+1 day', '+1 month');
 
         return [
             'created_by' => User::factory(),
-            'title' => ,
-            'slug' => Str::slug().'-'.Str::lower(Str::random(6)),
+            'title' => $title,
+            'slug' => Str::slug($title).'-'.Str::lower(Str::random(6)),
             'description' => fake()->paragraphs(2, true),
             'location' => fake()->city(),
-            'starts_at' => ,
-            'ends_at' => (clone )->modify('+2 hours'),
+            'starts_at' => $startsAt,
+            'ends_at' => (clone $startsAt)->modify('+2 hours'),
             'status' => 'draft',
             'is_public' => false,
             'capacity' => fake()->numberBetween(20, 300),
@@ -48,7 +48,7 @@ class EventFactory extends Factory
      */
     public function published(): static
     {
-        return ->state(fn (array ) => [
+        return $this->state(fn (array $attributes) => [
             'status' => 'published',
         ]);
     }
@@ -58,7 +58,7 @@ class EventFactory extends Factory
      */
     public function public(): static
     {
-        return ->state(fn (array ) => [
+        return $this->state(fn (array $attributes) => [
             'is_public' => true,
         ]);
     }
