@@ -13,7 +13,7 @@ Route::get('/', function () {
 
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth', 'verified', 'role:admin|moderator'])->name('dashboard');
 
 Route::get('eventos', [EventsController::class, 'index'])->name('eventos.index');
 Route::get('eventos/{event:slug}', [EventsController::class, 'show'])->name('eventos.show');

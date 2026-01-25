@@ -3,7 +3,7 @@
 use App\Http\Controllers\Admin\EventsController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified'])
+Route::middleware(['auth', 'verified', 'role:admin|moderator'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {

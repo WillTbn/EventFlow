@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class TwoFactorAuthenticationTest extends TestCase
@@ -24,6 +25,7 @@ class TwoFactorAuthenticationTest extends TestCase
         ]);
 
         $user = User::factory()->create();
+        $this->assignRole($user, 'admin');
 
         $this->actingAs($user)
             ->withSession(['auth.password_confirmed_at' => time()])
@@ -41,6 +43,7 @@ class TwoFactorAuthenticationTest extends TestCase
         }
 
         $user = User::factory()->create();
+        $this->assignRole($user, 'admin');
 
         Features::twoFactorAuthentication([
             'confirm' => true,
@@ -60,6 +63,7 @@ class TwoFactorAuthenticationTest extends TestCase
         }
 
         $user = User::factory()->create();
+        $this->assignRole($user, 'admin');
 
         Features::twoFactorAuthentication([
             'confirm' => true,
@@ -76,17 +80,24 @@ class TwoFactorAuthenticationTest extends TestCase
 
     public function test_two_factor_settings_page_returns_forbidden_response_when_two_factor_is_disabled()
     {
-        if (! Features::canManageTwoFactorAuthentication()) {
-            $this->markTestSkipped('Two-factor authentication is not enabled.');
-        }
+        $features = array_filter(
+            config('fortify.features', []),
+            fn (string $feature) => $feature !== Features::twoFactorAuthentication()
+        );
 
-        config(['fortify.features' => []]);
+        config(['fortify.features' => array_values($features)]);
 
         $user = User::factory()->create();
+        $this->assignRole($user, 'admin');
 
-        $this->actingAs($user)
-            ->withSession(['auth.password_confirmed_at' => time()])
-            ->get(route('two-factor.show'))
-            ->assertForbidden();
+        $response = $this->actingAs($user)->get(route('two-factor.show'));
+
+        $response->assertForbidden();
+    }
+
+    private function assignRole(User $user, string $role): void
+    {
+        Role::firstOrCreate(['name' => $role]);
+        $user->assignRole($role);
     }
 }

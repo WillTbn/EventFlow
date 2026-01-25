@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AdminEventsTest extends TestCase
@@ -21,7 +22,10 @@ class AdminEventsTest extends TestCase
     public function test_admin_index_shows_only_own_events()
     {
         $user = User::factory()->create();
+        $this->assignRole($user, 'admin');
+
         $otherUser = User::factory()->create();
+        $this->assignRole($otherUser, 'admin');
 
         $ownEvent = Event::factory()->create(['created_by' => $user->id]);
         Event::factory()->create(['created_by' => $otherUser->id]);
@@ -39,6 +43,8 @@ class AdminEventsTest extends TestCase
     public function test_admin_can_create_event()
     {
         $user = User::factory()->create();
+        $this->assignRole($user, 'admin');
+
         $startsAt = now()->addDays(2)->setTime(10, 0);
         $endsAt = (clone $startsAt)->addHours(2);
 
@@ -68,7 +74,11 @@ class AdminEventsTest extends TestCase
     public function test_admin_cannot_edit_other_users_event()
     {
         $user = User::factory()->create();
+        $this->assignRole($user, 'admin');
+
         $otherUser = User::factory()->create();
+        $this->assignRole($otherUser, 'admin');
+
         $event = Event::factory()->create(['created_by' => $otherUser->id]);
 
         $this->actingAs($user)
@@ -79,6 +89,8 @@ class AdminEventsTest extends TestCase
     public function test_admin_can_update_own_event()
     {
         $user = User::factory()->create();
+        $this->assignRole($user, 'admin');
+
         $event = Event::factory()->create(['created_by' => $user->id]);
         $startsAt = now()->addDays(3)->setTime(12, 0);
         $endsAt = (clone $startsAt)->addHours(3);
@@ -107,6 +119,8 @@ class AdminEventsTest extends TestCase
     public function test_admin_can_delete_own_event()
     {
         $user = User::factory()->create();
+        $this->assignRole($user, 'admin');
+
         $event = Event::factory()->create(['created_by' => $user->id]);
 
         $response = $this->actingAs($user)
@@ -116,5 +130,11 @@ class AdminEventsTest extends TestCase
         $this->assertDatabaseMissing('events', [
             'id' => $event->id,
         ]);
+    }
+
+    private function assignRole(User $user, string $role): void
+    {
+        Role::firstOrCreate(['name' => $role]);
+        $user->assignRole($role);
     }
 }
