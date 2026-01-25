@@ -28,13 +28,8 @@ import {
 import { dashboard } from '@/routes';
 import { index as adminEventsIndex } from '@/routes/admin/eventos';
 import { index as adminUsersIndex } from '@/routes/admin/usuarios';
-import { edit as appearanceEdit } from '@/routes/appearance';
 import { index as publicEventsIndex } from '@/routes/eventos';
-import { edit as profileEdit } from '@/routes/profile';
-import { show as twoFactorShow } from '@/routes/two-factor';
-import { edit as passwordEdit } from '@/routes/user-password';
 import { type NavItem } from '@/types';
-
 import AppLogo from './AppLogo.vue';
 
 const page = usePage();
@@ -76,37 +71,12 @@ const managementNavItems = computed<NavItem[]>(() => {
     ];
 });
 
-const accountNavItems = computed<NavItem[]>(() => {
-    if (!canManage.value) return [];
 
-    return [
-        {
-            title: 'Perfil',
-            href: profileEdit(),
-            icon: UserRound,
-        },
-        {
-            title: 'Senha',
-            href: passwordEdit(),
-            icon: KeyRound,
-        },
-        {
-            title: 'Aparencia',
-            href: appearanceEdit(),
-            icon: Paintbrush,
-        },
-        {
-            title: 'Dois fatores',
-            href: twoFactorShow(),
-            icon: ShieldCheck,
-        },
-    ];
-});
 
 const footerNavItems: NavItem[] = [
     {
         title: 'Repositorio',
-        href: 'https://github.com/laravel/vue-starter-kit',
+        href: 'https://github.com/WillTbn/EventFlow',
         icon: Globe,
     },
 ];
@@ -134,11 +104,6 @@ const footerNavItems: NavItem[] = [
             <template v-if="managementNavItems.length">
                 <SidebarSeparator class="my-2" />
                 <NavMain label="Administracao" :items="managementNavItems" />
-            </template>
-
-            <template v-if="accountNavItems.length">
-                <SidebarSeparator class="my-2" />
-                <NavMain label="Conta" :items="accountNavItems" />
             </template>
         </SidebarContent>
 

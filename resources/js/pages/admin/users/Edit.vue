@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
+import FlexRowCenter from '@/layouts/FlexRowCenter.vue';
 import { destroy, edit, index, update } from '@/routes/admin/usuarios';
 import type { BreadcrumbItem } from '@/types';
 
@@ -68,74 +69,75 @@ const destroyUser = () => {
                     <Link :href="index().url">Voltar</Link>
                 </Button>
             </div>
+            <FlexRowCenter>
+                <Card class="max-w-2xl basis-128">
+                    <CardHeader>
+                        <CardTitle>Dados do usuario</CardTitle>
+                        <CardDescription>
+                            Altere informacoes e senha se necessario.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form class="grid gap-6" @submit.prevent="submit">
+                            <div class="grid gap-2">
+                                <Label for="name">Nome</Label>
+                                <Input id="name" v-model="form.name" required />
+                                <InputError :message="form.errors.name" />
+                            </div>
 
-            <Card class="max-w-2xl">
-                <CardHeader>
-                    <CardTitle>Dados do usuario</CardTitle>
-                    <CardDescription>
-                        Altere informacoes e senha se necessario.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <form class="grid gap-6" @submit.prevent="submit">
-                        <div class="grid gap-2">
-                            <Label for="name">Nome</Label>
-                            <Input id="name" v-model="form.name" required />
-                            <InputError :message="form.errors.name" />
-                        </div>
+                            <div class="grid gap-2">
+                                <Label for="email">Email</Label>
+                                <Input id="email" v-model="form.email" type="email" required />
+                                <InputError :message="form.errors.email" />
+                            </div>
 
-                        <div class="grid gap-2">
-                            <Label for="email">Email</Label>
-                            <Input id="email" v-model="form.email" type="email" required />
-                            <InputError :message="form.errors.email" />
-                        </div>
+                            <div class="grid gap-2">
+                                <Label for="password">Nova senha</Label>
+                                <Input id="password" v-model="form.password" type="password" />
+                                <InputError :message="form.errors.password" />
+                            </div>
 
-                        <div class="grid gap-2">
-                            <Label for="password">Nova senha</Label>
-                            <Input id="password" v-model="form.password" type="password" />
-                            <InputError :message="form.errors.password" />
-                        </div>
+                            <div class="grid gap-2">
+                                <Label for="password_confirmation">Confirmar senha</Label>
+                                <Input
+                                    id="password_confirmation"
+                                    v-model="form.password_confirmation"
+                                    type="password"
+                                />
+                                <InputError :message="form.errors.password_confirmation" />
+                            </div>
 
-                        <div class="grid gap-2">
-                            <Label for="password_confirmation">Confirmar senha</Label>
-                            <Input
-                                id="password_confirmation"
-                                v-model="form.password_confirmation"
-                                type="password"
-                            />
-                            <InputError :message="form.errors.password_confirmation" />
-                        </div>
+                            <div class="grid gap-2">
+                                <Label for="role">Papel</Label>
+                                <select
+                                    id="role"
+                                    v-model="form.role"
+                                    class="h-10 rounded-md border bg-background px-3 text-sm"
+                                >
+                                    <option v-for="role in roles" :key="role" :value="role">
+                                        {{ role }}
+                                    </option>
+                                </select>
+                                <InputError :message="form.errors.role" />
+                            </div>
 
-                        <div class="grid gap-2">
-                            <Label for="role">Papel</Label>
-                            <select
-                                id="role"
-                                v-model="form.role"
-                                class="h-10 rounded-md border bg-background px-3 text-sm"
-                            >
-                                <option v-for="role in roles" :key="role" :value="role">
-                                    {{ role }}
-                                </option>
-                            </select>
-                            <InputError :message="form.errors.role" />
-                        </div>
-
-                        <div class="flex items-center justify-between">
-                            <Button type="submit" :disabled="form.processing">
-                                Salvar
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="destructive"
-                                :disabled="deleteForm.processing"
-                                @click="destroyUser"
-                            >
-                                Excluir
-                            </Button>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
+                            <div class="flex items-center justify-between">
+                                <Button type="submit" :disabled="form.processing">
+                                    Salvar
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    :disabled="deleteForm.processing"
+                                    @click="destroyUser"
+                                >
+                                    Excluir
+                                </Button>
+                            </div>
+                        </form>
+                    </CardContent>
+                </Card>
+            </FlexRowCenter>
         </div>
     </AppLayout>
 </template>
