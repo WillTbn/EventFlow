@@ -117,8 +117,9 @@ const breadcrumbs: BreadcrumbItem[] = [
                             class="rounded border px-3 py-1 text-sm"
                             :class="link.active ? 'bg-muted font-medium' : 'bg-background'"
                             :href="link.url ?? ''"
-                            v-html="link.label"
-                        />
+                        >
+                            <span v-html="link.label"></span>
+                        </Link>
                     </div>
                 </CardContent>
             </Card>

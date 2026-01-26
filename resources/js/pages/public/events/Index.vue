@@ -85,8 +85,9 @@ const breadcrumbs: BreadcrumbItem[] = [
                             : 'border-border text-muted-foreground',
                         link.url ? 'hover:border-primary/60' : 'pointer-events-none opacity-60',
                     ]"
-                    v-html="link.label"
-                />
+                >
+                    <span v-html="link.label"></span>
+                </Link>
             </div>
         </div>
     </AppLayout>

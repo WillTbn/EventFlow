@@ -3,11 +3,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 import {
     CalendarDays,
     Globe,
-    KeyRound,
     LayoutGrid,
-    Paintbrush,
-    ShieldCheck,
-    UserRound,
     Users,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
@@ -30,6 +26,7 @@ import { index as adminEventsIndex } from '@/routes/admin/eventos';
 import { index as adminUsersIndex } from '@/routes/admin/usuarios';
 import { index as publicEventsIndex } from '@/routes/eventos';
 import { type NavItem } from '@/types';
+
 import AppLogo from './AppLogo.vue';
 
 const page = usePage();
