@@ -44,6 +44,22 @@ class EventPolicy
     }
 
     /**
+     * Determine whether the user can upload story photos.
+     */
+    public function addPhotos(User $user, Event $event): bool
+    {
+        if ($user->id !== $event->created_by) {
+            return false;
+        }
+
+        if (! $event->ends_at) {
+            return false;
+        }
+
+        return $event->ends_at->isPast();
+    }
+
+    /**
      * Determine whether the user can delete the event.
      */
     public function delete(User $user, Event $event): bool

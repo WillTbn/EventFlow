@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Actions\Events\CreateEvent;
 use App\Actions\Events\UpdateEvent;
+use App\Actions\Photos\StoreEventMainPhoto;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreEventRequest;
 use App\Http\Requests\Admin\UpdateEventRequest;
 use App\Models\Event;
+use App\Models\EventPhoto;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -59,9 +62,16 @@ class EventsController extends Controller
     /**
      * Store a newly created event in storage.
      */
-    public function store(StoreEventRequest $request, CreateEvent $createEvent): RedirectResponse
-    {
+    public function store(
+        StoreEventRequest $request,
+        CreateEvent $createEvent,
+        StoreEventMainPhoto $storeEventMainPhoto
+    ): RedirectResponse {
         $event = $createEvent->handle($request->user(), $request->validated());
+
+        if ($request->hasFile('main_photo')) {
+            $storeEventMainPhoto->handle($event, $request->file('main_photo'));
+        }
 
         return to_route('admin.eventos.edit', $event);
     }
@@ -71,18 +81,32 @@ class EventsController extends Controller
      */
     public function edit(Event $event): Response
     {
+        $photos = $event->photos()
+            ->latest()
+            ->take(12)
+            ->get()
+            ->map(fn (EventPhoto $photo) => [
+                'id' => $photo->id,
+                'thumb_url' => Storage::disk('public')->url($photo->thumb_path),
+            ]);
+
         return Inertia::render('admin/events/Edit', [
             'event' => [
                 'id' => $event->id,
                 'title' => $event->title,
                 'description' => $event->description,
                 'location' => $event->location,
-                'starts_at' => $event->starts_at?->format('Y-m-d\\TH:i'),
-                'ends_at' => $event->ends_at?->format('Y-m-d\\TH:i'),
+                'starts_at' => $event->starts_at?->format('Y-m-d\TH:i'),
+                'ends_at' => $event->ends_at?->format('Y-m-d\TH:i'),
                 'status' => $event->status,
                 'is_public' => $event->is_public,
                 'capacity' => $event->capacity,
+                'main_photo_url' => $event->main_photo_thumb_path
+                    ? Storage::disk('public')->url($event->main_photo_thumb_path)
+                    : null,
+                'can_add_photos' => $event->ends_at?->isPast() ?? false,
             ],
+            'photos' => $photos,
         ]);
     }
 

@@ -24,6 +24,7 @@ class StoreEventRequest extends FormRequest
             'status' => ['required', Rule::in(['draft', 'published', 'canceled'])],
             'is_public' => ['required', 'boolean'],
             'capacity' => ['nullable', 'integer', 'min:1'],
+            'main_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 }

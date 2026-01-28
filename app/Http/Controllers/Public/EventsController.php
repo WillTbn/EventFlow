@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,10 +27,14 @@ class EventsController extends Controller
             ->through(fn (Event $event) => [
                 'id' => $event->id,
                 'title' => $event->title,
+                'description' => $event->description,
                 'slug' => $event->slug,
                 'location' => $event->location,
                 'starts_at' => $event->starts_at?->format('Y-m-d H:i'),
                 'ends_at' => $event->ends_at?->format('Y-m-d H:i'),
+                'main_photo_medium_path' => $event->main_photo_medium_path
+                    ? Storage::disk('public')->url($event->main_photo_medium_path)
+                    : null,
             ]);
 
         return Inertia::render('public/events/Index', [

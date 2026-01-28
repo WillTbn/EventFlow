@@ -42,6 +42,7 @@ const statusOptions = [
                     <Form
                         :action="store().url"
                         method="post"
+                        enctype="multipart/form-data"
                         class="mt-6 space-y-6"
                         v-slot="{ errors, processing }"
                     >
@@ -94,6 +95,17 @@ const statusOptions = [
                                 </option>
                             </select>
                             <InputError :message="errors.status" />
+                        </div>
+
+                        <div class="grid gap-2">
+                            <Label for="main_photo">Foto principal</Label>
+                            <Input
+                                id="main_photo"
+                                name="main_photo"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                            />
+                            <InputError :message="errors.main_photo" />
                         </div>
 
                         <div class="grid gap-2">

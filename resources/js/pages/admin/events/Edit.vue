@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -20,11 +21,22 @@ interface EventFormData {
     status: string;
     is_public: boolean;
     capacity: number | null;
+    main_photo_url: string | null;
+    can_add_photos: boolean;
+}
+
+interface EventPhotoItem {
+    id: number;
+    thumb_url: string;
 }
 
 const props = defineProps<{
     event: EventFormData;
+    photos: EventPhotoItem[];
 }>();
+
+const mainPhotoAction = computed(() => `/admin/eventos/${props.event.id}/foto-principal`);
+const storyPhotosAction = computed(() => `/admin/eventos/${props.event.id}/fotos`);
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -53,6 +65,7 @@ const statusOptions = [
             <p class="text-sm text-muted-foreground">
                 Atualize as informacoes do evento.
             </p>
+            {{event.location}}
             <FlexRowCenter>
                 <div class="max-w-2xl basis-2/3">
                     <Form
@@ -63,7 +76,12 @@ const statusOptions = [
                     >
                         <div class="grid gap-2">
                             <Label for="title">Titulo</Label>
-                            <Input id="title" name="title" required :value="event.title" />
+                            <Input
+                                id="title"
+                                name="title"
+                                required
+                                :default-value="event.title ?? ''"
+                            />
                             <InputError :message="errors.title" />
                         </div>
 
@@ -81,7 +99,11 @@ const statusOptions = [
 
                         <div class="grid gap-2">
                             <Label for="location">Local</Label>
-                            <Input id="location" name="location" :value="event.location ?? ''" />
+                            <Input
+                                id="location"
+                                name="location"
+                                :default-value="event.location ?? ''"
+                            />
                             <InputError :message="errors.location" />
                         </div>
 
@@ -93,7 +115,7 @@ const statusOptions = [
                                     name="starts_at"
                                     type="datetime-local"
                                     required
-                                    :value="event.starts_at ?? ''"
+                                    :default-value="event.starts_at ?? ''"
                                 />
                                 <InputError :message="errors.starts_at" />
                             </div>
@@ -104,7 +126,7 @@ const statusOptions = [
                                     name="ends_at"
                                     type="datetime-local"
                                     required
-                                    :value="event.ends_at ?? ''"
+                                    :default-value="event.ends_at ?? ''"
                                 />
                                 <InputError :message="errors.ends_at" />
                             </div>
@@ -132,7 +154,7 @@ const statusOptions = [
                                 name="capacity"
                                 type="number"
                                 min="1"
-                                :value="event.capacity ?? ''"
+                                :default-value="event.capacity ?? ''"
                             />
                             <InputError :message="errors.capacity" />
                         </div>
@@ -158,6 +180,93 @@ const statusOptions = [
                             </Button>
                         </div>
                     </Form>
+
+                    <div class="mt-10 space-y-6">
+                        <div class="rounded-md border border-border p-4">
+                            <h2 class="text-lg font-semibold">Foto principal</h2>
+                            <p class="text-sm text-muted-foreground">
+                                Envie a imagem principal de divulgacao do evento.
+                            </p>
+
+                            <div v-if="event.main_photo_url" class="mt-4">
+                                <img
+                                    :src="event.main_photo_url"
+                                    alt="Foto principal do evento"
+                                    class="h-32 w-32 rounded object-cover"
+                                />
+                            </div>
+
+                            <Form
+                                :action="mainPhotoAction"
+                                method="post"
+                                enctype="multipart/form-data"
+                                class="mt-4 space-y-4"
+                                v-slot="{ errors, processing }"
+                            >
+                                <div class="grid gap-2">
+                                    <Label for="main_photo">Imagem principal</Label>
+                                    <Input
+                                        id="main_photo"
+                                        name="main_photo"
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        required
+                                    />
+                                    <InputError :message="errors.main_photo" />
+                                </div>
+
+                                <Button type="submit" :disabled="processing">Atualizar foto</Button>
+                            </Form>
+                        </div>
+
+                        <div class="rounded-md border border-border p-4">
+                            <h2 class="text-lg font-semibold">Fotos do acontecido</h2>
+                            <p class="text-sm text-muted-foreground">
+                                Essas imagens registram o evento e so podem ser enviadas apos a realizacao.
+                            </p>
+
+                            <Form
+                                :action="storyPhotosAction"
+                                method="post"
+                                enctype="multipart/form-data"
+                                class="mt-4 space-y-4"
+                                v-slot="{ errors, processing }"
+                            >
+                                <div class="grid gap-2">
+                                    <Label for="story_photos">Enviar fotos</Label>
+                                    <Input
+                                        id="story_photos"
+                                        name="photos[]"
+                                        type="file"
+                                        multiple
+                                        accept="image/jpeg,image/png,image/webp"
+                                        :disabled="!event.can_add_photos"
+                                    />
+                                    <InputError :message="errors.photos || errors['photos.0']" />
+                                </div>
+
+                                <Button type="submit" :disabled="processing || !event.can_add_photos">
+                                    Enviar fotos
+                                </Button>
+                                <p v-if="!event.can_add_photos" class="text-xs text-muted-foreground">
+                                    As fotos do acontecido so podem ser enviadas apos o evento terminar.
+                                </p>
+                            </Form>
+
+                            <div v-if="photos.length" class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                <img
+                                    v-for="photo in photos"
+                                    :key="photo.id"
+                                    :src="photo.thumb_url"
+                                    alt="Foto do evento"
+                                    class="h-24 w-full rounded object-cover"
+                                />
+                            </div>
+                            <p v-else class="mt-4 text-xs text-muted-foreground">
+                                Nenhuma foto do acontecido cadastrada.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </FlexRowCenter>
         </div>
