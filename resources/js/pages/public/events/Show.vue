@@ -2,11 +2,10 @@
 import { Head, Link } from '@inertiajs/vue3';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import AppLayout from '@/layouts/AppLayout.vue';
+import { useTenantUrl } from '@/composables/useTenantUrl';
 import { index } from '@/routes/eventos';
-import { type BreadcrumbItem } from '@/types';
 
-interface EventDetails {
+interface EventPayload {
     id: number;
     title: string;
     description: string | null;
@@ -18,50 +17,28 @@ interface EventDetails {
 }
 
 defineProps<{
-    event: EventDetails;
+    event: EventPayload;
 }>();
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Eventos',
-        href: index().url,
-    },
-];
+const { withTenantUrl } = useTenantUrl();
 </script>
 
 <template>
     <Head :title="event.title" />
 
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="max-w-3xl space-y-6">
-            <div>
-                <p class="text-sm text-muted-foreground">
-                    <Link :href="index().url" class="hover:underline">Eventos</Link>
-                </p>
-                <h1 class="text-2xl font-semibold">{{ event.title }}</h1>
+    <Card>
+        <CardHeader>
+            <CardTitle>{{ event.title }}</CardTitle>
+        </CardHeader>
+        <CardContent class="space-y-4">
+            <p class="text-sm text-muted-foreground">{{ event.description }}</p>
+            <div class="text-sm text-muted-foreground">
+                <p>{{ event.location }}</p>
+                <p>{{ event.starts_at }} - {{ event.ends_at }}</p>
             </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Detalhes</CardTitle>
-                </CardHeader>
-                <CardContent class="space-y-2 text-sm">
-                    <p v-if="event.location">Local: {{ event.location }}</p>
-                    <p>Inicio: {{ event.starts_at }}</p>
-                    <p>Fim: {{ event.ends_at }}</p>
-                    <p>Status: {{ event.status }}</p>
-                    <p>Visivel ao publico: {{ event.is_public ? 'Sim' : 'Nao' }}</p>
-                </CardContent>
-            </Card>
-
-            <Card v-if="event.description">
-                <CardHeader>
-                    <CardTitle>Descricao</CardTitle>
-                </CardHeader>
-                <CardContent class="text-sm text-muted-foreground">
-                    {{ event.description }}
-                </CardContent>
-            </Card>
-        </div>
-    </AppLayout>
+            <Link class="text-sm text-primary" :href="withTenantUrl(index())">
+                Voltar
+            </Link>
+        </CardContent>
+    </Card>
 </template>

@@ -9,7 +9,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AdminEventsTest extends TestCase
@@ -18,23 +17,32 @@ class AdminEventsTest extends TestCase
 
     public function test_admin_index_requires_authentication()
     {
-        $this->get(route('admin.eventos.index'))
+        $tenant = $this->createTenant();
+
+        $this->get(route('admin.eventos.index', ['tenantSlug' => $tenant->slug]))
             ->assertRedirect(route('login'));
     }
 
     public function test_admin_index_shows_only_own_events()
     {
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
-
         $otherUser = User::factory()->create();
-        $this->assignRole($otherUser, 'admin');
 
-        $ownEvent = Event::factory()->create(['created_by' => $user->id]);
-        Event::factory()->create(['created_by' => $otherUser->id]);
+        $this->attachUserToTenant($user, $tenant, 'admin');
+        $this->attachUserToTenant($otherUser, $tenant, 'admin');
 
-        $this->actingAs($user)
-            ->get(route('admin.eventos.index'))
+        $ownEvent = Event::factory()->create([
+            'tenant_id' => $tenant->id,
+            'created_by' => $user->id,
+        ]);
+        Event::factory()->create([
+            'tenant_id' => $tenant->id,
+            'created_by' => $otherUser->id,
+        ]);
+
+        $this->actingAsTenant($user, $tenant, 'admin')
+            ->get(route('admin.eventos.index', ['tenantSlug' => $tenant->slug]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('admin/events/Index')
@@ -45,14 +53,15 @@ class AdminEventsTest extends TestCase
 
     public function test_admin_can_create_event()
     {
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
         $startsAt = now()->addDays(2)->setTime(10, 0);
         $endsAt = (clone $startsAt)->addHours(2);
 
-        $response = $this->actingAs($user)
-            ->post(route('admin.eventos.store'), [
+        $response = $this->actingAsTenant($user, $tenant, 'admin')
+            ->post(route('admin.eventos.store', ['tenantSlug' => $tenant->slug]), [
                 'title' => 'Evento de teste',
                 'description' => 'Descricao do evento',
                 'location' => 'Sao Paulo',
@@ -65,9 +74,13 @@ class AdminEventsTest extends TestCase
 
         $event = Event::firstOrFail();
 
-        $response->assertRedirect(route('admin.eventos.edit', $event));
+        $response->assertRedirect(route('admin.eventos.edit', [
+            'tenantSlug' => $tenant->slug,
+            'event' => $event,
+        ]));
         $this->assertDatabaseHas('events', [
             'id' => $event->id,
+            'tenant_id' => $tenant->id,
             'created_by' => $user->id,
             'title' => 'Evento de teste',
             'is_public' => 1,
@@ -78,14 +91,15 @@ class AdminEventsTest extends TestCase
     {
         Storage::fake('public');
 
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
         $startsAt = now()->addDays(2)->setTime(10, 0);
         $endsAt = (clone $startsAt)->addHours(2);
 
-        $response = $this->actingAs($user)
-            ->post(route('admin.eventos.store'), [
+        $response = $this->actingAsTenant($user, $tenant, 'admin')
+            ->post(route('admin.eventos.store', ['tenantSlug' => $tenant->slug]), [
                 'title' => 'Evento com foto',
                 'description' => 'Descricao do evento',
                 'location' => 'Sao Paulo',
@@ -99,7 +113,10 @@ class AdminEventsTest extends TestCase
 
         $event = Event::firstOrFail();
 
-        $response->assertRedirect(route('admin.eventos.edit', $event));
+        $response->assertRedirect(route('admin.eventos.edit', [
+            'tenantSlug' => $tenant->slug,
+            'event' => $event,
+        ]));
         $event->refresh();
 
         $this->assertNotNull($event->main_photo_path);
@@ -110,30 +127,45 @@ class AdminEventsTest extends TestCase
 
     public function test_admin_cannot_edit_other_users_event()
     {
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
-
         $otherUser = User::factory()->create();
-        $this->assignRole($otherUser, 'admin');
 
-        $event = Event::factory()->create(['created_by' => $otherUser->id]);
+        $this->attachUserToTenant($user, $tenant, 'admin');
+        $this->attachUserToTenant($otherUser, $tenant, 'admin');
 
-        $this->actingAs($user)
-            ->get(route('admin.eventos.edit', $event))
+        $event = Event::factory()->create([
+            'tenant_id' => $tenant->id,
+            'created_by' => $otherUser->id,
+        ]);
+
+        $this->actingAsTenant($user, $tenant, 'admin')
+            ->get(route('admin.eventos.edit', [
+                'tenantSlug' => $tenant->slug,
+                'event' => $event,
+            ]))
             ->assertForbidden();
     }
 
     public function test_admin_can_update_own_event()
     {
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
 
-        $event = Event::factory()->create(['created_by' => $user->id]);
+        $this->attachUserToTenant($user, $tenant, 'admin');
+
+        $event = Event::factory()->create([
+            'tenant_id' => $tenant->id,
+            'created_by' => $user->id,
+        ]);
         $startsAt = now()->addDays(3)->setTime(12, 0);
         $endsAt = (clone $startsAt)->addHours(3);
 
-        $response = $this->actingAs($user)
-            ->put(route('admin.eventos.update', $event), [
+        $response = $this->actingAsTenant($user, $tenant, 'admin')
+            ->put(route('admin.eventos.update', [
+                'tenantSlug' => $tenant->slug,
+                'event' => $event,
+            ]), [
                 'title' => 'Evento atualizado',
                 'description' => 'Descricao atualizada',
                 'location' => 'Rio de Janeiro',
@@ -144,7 +176,10 @@ class AdminEventsTest extends TestCase
                 'capacity' => 200,
             ]);
 
-        $response->assertRedirect(route('admin.eventos.edit', $event));
+        $response->assertRedirect(route('admin.eventos.edit', [
+            'tenantSlug' => $tenant->slug,
+            'event' => $event,
+        ]));
         $this->assertDatabaseHas('events', [
             'id' => $event->id,
             'title' => 'Evento atualizado',
@@ -155,23 +190,25 @@ class AdminEventsTest extends TestCase
 
     public function test_admin_can_delete_own_event()
     {
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
 
-        $event = Event::factory()->create(['created_by' => $user->id]);
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
-        $response = $this->actingAs($user)
-            ->delete(route('admin.eventos.destroy', $event));
+        $event = Event::factory()->create([
+            'tenant_id' => $tenant->id,
+            'created_by' => $user->id,
+        ]);
 
-        $response->assertRedirect(route('admin.eventos.index'));
+        $response = $this->actingAsTenant($user, $tenant, 'admin')
+            ->delete(route('admin.eventos.destroy', [
+                'tenantSlug' => $tenant->slug,
+                'event' => $event,
+            ]));
+
+        $response->assertRedirect(route('admin.eventos.index', ['tenantSlug' => $tenant->slug]));
         $this->assertDatabaseMissing('events', [
             'id' => $event->id,
         ]);
-    }
-
-    private function assignRole(User $user, string $role): void
-    {
-        Role::firstOrCreate(['name' => $role]);
-        $user->assignRole($role);
     }
 }

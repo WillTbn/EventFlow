@@ -4,7 +4,6 @@ namespace Tests\Feature\Settings;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ProfileUpdateTest extends TestCase
@@ -13,23 +12,28 @@ class ProfileUpdateTest extends TestCase
 
     public function test_profile_page_is_displayed()
     {
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
-        $this->actingAs($user)
-            ->get(route('profile.edit'))
+        $this->actingAsTenant($user, $tenant, 'admin')
+            ->get(route('profile.edit', ['tenantSlug' => $tenant->slug]))
             ->assertOk();
     }
 
     public function test_profile_information_can_be_updated()
     {
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
-        $response = $this->actingAs($user)->patch(route('profile.update'), [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        $response = $this->actingAsTenant($user, $tenant, 'admin')->patch(
+            route('profile.update', ['tenantSlug' => $tenant->slug]),
+            [
+                'name' => 'Test User',
+                'email' => 'test@example.com',
+            ]
+        );
 
         $this->assertEquals('Test User', $user->fresh()->name);
         $this->assertEquals('test@example.com', $user->fresh()->email);
@@ -38,13 +42,17 @@ class ProfileUpdateTest extends TestCase
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged()
     {
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
-        $response = $this->actingAs($user)->patch(route('profile.update'), [
-            'name' => 'Test User',
-            'email' => $user->email,
-        ]);
+        $response = $this->actingAsTenant($user, $tenant, 'admin')->patch(
+            route('profile.update', ['tenantSlug' => $tenant->slug]),
+            [
+                'name' => 'Test User',
+                'email' => $user->email,
+            ]
+        );
 
         $this->assertNotNull($user->fresh()->email_verified_at);
         $response->assertSessionHasNoErrors();
@@ -52,12 +60,16 @@ class ProfileUpdateTest extends TestCase
 
     public function test_user_can_delete_their_account()
     {
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
-        $response = $this->actingAs($user)->delete(route('profile.destroy'), [
-            'password' => 'password',
-        ]);
+        $response = $this->actingAsTenant($user, $tenant, 'admin')->delete(
+            route('profile.destroy', ['tenantSlug' => $tenant->slug]),
+            [
+                'password' => 'password',
+            ]
+        );
 
         $this->assertNull($user->fresh());
         $response->assertRedirect('/');
@@ -65,20 +77,18 @@ class ProfileUpdateTest extends TestCase
 
     public function test_correct_password_must_be_provided_to_delete_account()
     {
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
-        $response = $this->actingAs($user)->delete(route('profile.destroy'), [
-            'password' => 'wrong-password',
-        ]);
+        $response = $this->actingAsTenant($user, $tenant, 'admin')->delete(
+            route('profile.destroy', ['tenantSlug' => $tenant->slug]),
+            [
+                'password' => 'wrong-password',
+            ]
+        );
 
         $this->assertNotNull($user->fresh());
         $response->assertSessionHasErrors('password');
-    }
-
-    private function assignRole(User $user, string $role): void
-    {
-        Role::firstOrCreate(['name' => $role]);
-        $user->assignRole($role);
     }
 }

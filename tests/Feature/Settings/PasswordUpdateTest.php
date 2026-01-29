@@ -4,7 +4,6 @@ namespace Tests\Feature\Settings;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class PasswordUpdateTest extends TestCase
@@ -13,24 +12,29 @@ class PasswordUpdateTest extends TestCase
 
     public function test_password_update_page_is_displayed()
     {
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
-        $this->actingAs($user)
-            ->get(route('user-password.edit'))
+        $this->actingAsTenant($user, $tenant, 'admin')
+            ->get(route('user-password.edit', ['tenantSlug' => $tenant->slug]))
             ->assertOk();
     }
 
     public function test_password_can_be_updated()
     {
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
-        $response = $this->actingAs($user)->put(route('user-password.update'), [
-            'current_password' => 'password',
-            'password' => 'new-password',
-            'password_confirmation' => 'new-password',
-        ]);
+        $response = $this->actingAsTenant($user, $tenant, 'admin')->put(
+            route('user-password.update', ['tenantSlug' => $tenant->slug]),
+            [
+                'current_password' => 'password',
+                'password' => 'new-password',
+                'password_confirmation' => 'new-password',
+            ]
+        );
 
         $this->assertTrue(password_verify('new-password', $user->fresh()->password));
         $response->assertSessionHasNoErrors();
@@ -38,21 +42,19 @@ class PasswordUpdateTest extends TestCase
 
     public function test_correct_password_must_be_provided_to_update_password()
     {
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
-        $response = $this->actingAs($user)->put(route('user-password.update'), [
-            'current_password' => 'wrong-password',
-            'password' => 'new-password',
-            'password_confirmation' => 'new-password',
-        ]);
+        $response = $this->actingAsTenant($user, $tenant, 'admin')->put(
+            route('user-password.update', ['tenantSlug' => $tenant->slug]),
+            [
+                'current_password' => 'wrong-password',
+                'password' => 'new-password',
+                'password_confirmation' => 'new-password',
+            ]
+        );
 
         $response->assertSessionHasErrors('current_password');
-    }
-
-    private function assignRole(User $user, string $role): void
-    {
-        Role::firstOrCreate(['name' => $role]);
-        $user->assignRole($role);
     }
 }

@@ -6,7 +6,6 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class TwoFactorAuthenticationTest extends TestCase
@@ -24,12 +23,13 @@ class TwoFactorAuthenticationTest extends TestCase
             'confirmPassword' => true,
         ]);
 
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
-        $this->actingAs($user)
+        $this->actingAsTenant($user, $tenant, 'admin')
             ->withSession(['auth.password_confirmed_at' => time()])
-            ->get(route('two-factor.show'))
+            ->get(route('two-factor.show', ['tenantSlug' => $tenant->slug]))
             ->assertInertia(fn (Assert $page) => $page
                 ->component('settings/TwoFactor')
                 ->where('twoFactorEnabled', false)
@@ -42,16 +42,17 @@ class TwoFactorAuthenticationTest extends TestCase
             $this->markTestSkipped('Two-factor authentication is not enabled.');
         }
 
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
         Features::twoFactorAuthentication([
             'confirm' => true,
             'confirmPassword' => true,
         ]);
 
-        $response = $this->actingAs($user)
-            ->get(route('two-factor.show'));
+        $response = $this->actingAsTenant($user, $tenant, 'admin')
+            ->get(route('two-factor.show', ['tenantSlug' => $tenant->slug]));
 
         $response->assertRedirect(route('password.confirm'));
     }
@@ -62,16 +63,17 @@ class TwoFactorAuthenticationTest extends TestCase
             $this->markTestSkipped('Two-factor authentication is not enabled.');
         }
 
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
         Features::twoFactorAuthentication([
             'confirm' => true,
             'confirmPassword' => false,
         ]);
 
-        $this->actingAs($user)
-            ->get(route('two-factor.show'))
+        $this->actingAsTenant($user, $tenant, 'admin')
+            ->get(route('two-factor.show', ['tenantSlug' => $tenant->slug]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('settings/TwoFactor')
@@ -87,17 +89,13 @@ class TwoFactorAuthenticationTest extends TestCase
 
         config(['fortify.features' => array_values($features)]);
 
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
-        $response = $this->actingAs($user)->get(route('two-factor.show'));
+        $response = $this->actingAsTenant($user, $tenant, 'admin')
+            ->get(route('two-factor.show', ['tenantSlug' => $tenant->slug]));
 
         $response->assertForbidden();
-    }
-
-    private function assignRole(User $user, string $role): void
-    {
-        Role::firstOrCreate(['name' => $role]);
-        $user->assignRole($role);
     }
 }

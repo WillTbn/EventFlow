@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\StoreEventRequest;
 use App\Http\Requests\Admin\UpdateEventRequest;
 use App\Models\Event;
 use App\Models\EventPhoto;
+use App\Services\TenantContext;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class EventsController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct()
+    public function __construct(private TenantContext $tenantContext)
     {
         // Map resource abilities to policy methods.
         $this->authorizeResource(Event::class, 'event');
@@ -73,13 +74,16 @@ class EventsController extends Controller
             $storeEventMainPhoto->handle($event, $request->file('main_photo'));
         }
 
-        return to_route('admin.eventos.edit', $event);
+        return to_route('admin.eventos.edit', [
+            'tenantSlug' => $this->tenantContext->get()?->slug,
+            'event' => $event,
+        ]);
     }
 
     /**
      * Show the form for editing the specified event.
      */
-    public function edit(Event $event): Response
+    public function edit(string $tenantSlug, Event $event): Response
     {
         $photos = $event->photos()
             ->latest()
@@ -113,20 +117,27 @@ class EventsController extends Controller
     /**
      * Update the specified event in storage.
      */
-    public function update(UpdateEventRequest $request, Event $event, UpdateEvent $updateEvent): RedirectResponse
+    public function update(UpdateEventRequest $request, string $tenantSlug, Event $event, UpdateEvent $updateEvent): RedirectResponse
     {
         $updateEvent->handle($event, $request->validated());
 
-        return to_route('admin.eventos.edit', $event);
+        return to_route('admin.eventos.edit', [
+            'tenantSlug' => $this->tenantContext->get()?->slug,
+            'event' => $event,
+        ]);
     }
 
     /**
      * Remove the specified event from storage.
      */
-    public function destroy(Event $event): RedirectResponse
+    public function destroy(string $tenantSlug, Event $event): RedirectResponse
     {
         $event->delete();
 
-        return to_route('admin.eventos.index');
+        return to_route('admin.eventos.index', [
+            'tenantSlug' => $this->tenantContext->get()?->slug,
+        ]);
     }
 }
+
+

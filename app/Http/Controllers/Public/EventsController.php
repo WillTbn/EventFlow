@@ -45,7 +45,7 @@ class EventsController extends Controller
     /**
      * Display the specified event.
      */
-    public function show(Event $event): Response
+    public function show(string $tenantSlug, Event $event): Response
     {
         Gate::authorize('view', $event);
 
@@ -63,3 +63,4 @@ class EventsController extends Controller
         ]);
     }
 }
+

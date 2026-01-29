@@ -11,7 +11,7 @@ class UserPolicy
      */
     public function before(User $user, string $ability): ?bool
     {
-        if ($user->hasRole('admin')) {
+        if ($this->roleFor($user) === 'admin') {
             return true;
         }
 
@@ -23,7 +23,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('moderator');
+        return $this->roleFor($user) === 'moderator';
     }
 
     /**
@@ -31,7 +31,8 @@ class UserPolicy
      */
     public function view(User $user, User $model): bool
     {
-        return $user->hasRole('moderator') && $model->hasRole('member');
+        return $this->roleFor($user) === 'moderator'
+            && $this->roleFor($model) === 'member';
     }
 
     /**
@@ -39,7 +40,7 @@ class UserPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('moderator');
+        return $this->roleFor($user) === 'moderator';
     }
 
     /**
@@ -47,7 +48,8 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        return $user->hasRole('moderator') && $model->hasRole('member');
+        return $this->roleFor($user) === 'moderator'
+            && $this->roleFor($model) === 'member';
     }
 
     /**
@@ -55,6 +57,12 @@ class UserPolicy
      */
     public function delete(User $user, User $model): bool
     {
-        return $user->hasRole('moderator') && $model->hasRole('member');
+        return $this->roleFor($user) === 'moderator'
+            && $this->roleFor($model) === 'member';
+    }
+
+    private function roleFor(User $user): ?string
+    {
+        return $user->tenantRole();
     }
 }

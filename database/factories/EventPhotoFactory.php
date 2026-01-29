@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Event;
 use App\Models\EventPhoto;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -26,8 +27,13 @@ class EventPhotoFactory extends Factory
      */
     public function definition(): array
     {
+        $tenant = Tenant::factory();
+
         return [
-            'event_id' => Event::factory(),
+            'tenant_id' => $tenant,
+            'event_id' => Event::factory()->state(fn () => [
+                'tenant_id' => $tenant,
+            ]),
             'uploaded_by' => User::factory(),
             'original_path' => 'events/sample/original.jpg',
             'medium_path' => 'events/sample/medium.jpg',

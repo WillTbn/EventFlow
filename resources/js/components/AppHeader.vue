@@ -35,9 +35,9 @@ import {
 } from '@/components/ui/tooltip';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useActiveUrl } from '@/composables/useActiveUrl';
+import { useTenantUrl } from '@/composables/useTenantUrl';
 import { getInitials } from '@/composables/useInitials';
 import { toUrl } from '@/lib/utils';
-import { dashboard } from '@/routes';
 import type { BreadcrumbItem, NavItem } from '@/types';
 
 interface Props {
@@ -51,6 +51,7 @@ const props = withDefaults(defineProps<Props>(), {
 const page = usePage();
 const auth = computed(() => page.props.auth);
 const { urlIsActive } = useActiveUrl();
+const { withTenantUrl, dashboardUrl } = useTenantUrl();
 
 function activeItemStyles(url: NonNullable<InertiaLinkProps['href']>) {
     return urlIsActive(url)
@@ -58,13 +59,13 @@ function activeItemStyles(url: NonNullable<InertiaLinkProps['href']>) {
         : '';
 }
 
-const mainNavItems: NavItem[] = [
+const mainNavItems = computed<NavItem[]>(() => [
     {
         title: 'Dashboard',
-        href: dashboard(),
+        href: dashboardUrl.value,
         icon: LayoutGrid,
     },
-];
+]);
 
 const rightNavItems: NavItem[] = [
     {
@@ -146,7 +147,7 @@ const rightNavItems: NavItem[] = [
                     </Sheet>
                 </div>
 
-                <Link :href="dashboard()" class="flex items-center gap-x-2">
+                <Link :href="dashboardUrl" class="flex items-center gap-x-2">
                     <AppLogo />
                 </Link>
 
@@ -220,61 +221,57 @@ const rightNavItems: NavItem[] = [
                                                         item.title
                                                     }}</span>
                                                     <component
+                                                        v-if="item.icon"
                                                         :is="item.icon"
                                                         class="size-5 opacity-80 group-hover:opacity-100"
                                                     />
                                                 </a>
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>{{ item.title }}</p>
-                                        </TooltipContent>
+                                        <TooltipContent>{{ item.title }}</TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
                             </template>
                         </div>
                     </div>
 
-                    <DropdownMenu>
-                        <DropdownMenuTrigger :as-child="true">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                class="relative size-10 w-auto rounded-full p-1 focus-within:ring-2 focus-within:ring-primary"
-                            >
-                                <Avatar
-                                    class="size-8 overflow-hidden rounded-full"
-                                >
-                                    <AvatarImage
-                                        v-if="auth.user.avatar"
-                                        :src="auth.user.avatar"
-                                        :alt="auth.user.name"
-                                    />
-                                    <AvatarFallback
-                                        class="rounded-lg bg-neutral-200 font-semibold text-black dark:bg-neutral-700 dark:text-white"
-                                    >
-                                        {{ getInitials(auth.user?.name) }}
-                                    </AvatarFallback>
-                                </Avatar>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" class="w-56">
-                            <UserMenuContent :user="auth.user" />
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-            </div>
-        </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="hidden items-center space-x-4 lg:flex">
+                            <Breadcrumbs :breadcrumbs="props.breadcrumbs" />
+                        </div>
 
-        <div
-            v-if="props.breadcrumbs.length > 1"
-            class="flex w-full border-b border-sidebar-border/70"
-        >
-            <div
-                class="mx-auto flex h-12 w-full items-center justify-start px-4 text-neutral-500 md:max-w-7xl"
-            >
-                <Breadcrumbs :breadcrumbs="breadcrumbs" />
+                        <DropdownMenu>
+                            <DropdownMenuTrigger as-child>
+                                <Button
+                                    variant="ghost"
+                                    class="relative h-10 w-10 rounded-full"
+                                    data-test="app-header-avatar"
+                                >
+                                    <Avatar class="h-9 w-9">
+                                        <AvatarImage
+                                            :src="auth?.user?.profile_photo_url"
+                                            :alt="auth?.user?.name"
+                                        />
+                                        <AvatarFallback>
+                                            {{ getInitials(auth?.user?.name) }}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                                class="w-56"
+                                align="end"
+                                :side-offset="8"
+                            >
+                                <UserMenuContent :user="auth?.user" />
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </template>
+
+
+

@@ -4,6 +4,7 @@ import { Form, Head, Link } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTenantUrl } from '@/composables/useTenantUrl';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { create, destroy, edit, index } from '@/routes/admin/eventos';
 import { type BreadcrumbItem } from '@/types';
@@ -32,10 +33,12 @@ defineProps<{
     events: Pagination<EventListItem>;
 }>();
 
+const { withTenantUrl } = useTenantUrl();
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Eventos',
-        href: index().url,
+        href: withTenantUrl(index()),
     },
 ];
 </script>
@@ -53,7 +56,7 @@ const breadcrumbs: BreadcrumbItem[] = [
             </div>
 
             <Button as-child>
-                <Link :href="create().url">Novo evento</Link>
+                <Link :href="withTenantUrl(create())">Novo evento</Link>
             </Button>
         </div>
 
@@ -102,12 +105,14 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 <td class="px-3 py-2 text-right">
                                     <div class="flex items-center justify-end gap-2">
                                         <Button size="sm" variant="outline" as-child>
-                                            <Link :href="edit({ event: event.id }).url">
+                                            <Link
+                                                :href="withTenantUrl(edit({ event: event.id }))"
+                                            >
                                                 Editar
                                             </Link>
                                         </Button>
                                         <Form
-                                            :action="destroy({ event: event.id }).url"
+                                            :action="withTenantUrl(destroy({ event: event.id }).url)"
                                             method="delete"
                                             v-slot="{ processing, errors }"
                                         >

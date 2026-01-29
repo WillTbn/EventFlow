@@ -2,15 +2,17 @@
 import { Head } from '@inertiajs/vue3';
 
 import AppLayout from '@/layouts/AppLayout.vue';
-import { dashboard } from '@/routes';
+import { useTenantUrl } from '@/composables/useTenantUrl';
 import { type BreadcrumbItem } from '@/types';
 
 import PlaceholderPattern from '../components/PlaceholderPattern.vue';
 
+const { dashboardUrl } = useTenantUrl();
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
-        href: dashboard().url,
+        href: dashboardUrl.value,
     },
 ];
 </script>
@@ -47,3 +49,4 @@ const breadcrumbs: BreadcrumbItem[] = [
         </div>
     </AppLayout>
 </template>
+

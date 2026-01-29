@@ -4,10 +4,12 @@ namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Models\Tenant;
+use App\Models\TenantUser;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
-use Spatie\Permission\Models\Role;
 
 class CreateNewUser implements CreatesNewUsers
 {
@@ -31,8 +33,30 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $input['password'],
         ]);
 
-        Role::firstOrCreate(['name' => 'member']);
-        $user->assignRole('member');
+        $workspaceName = sprintf('%s Workspace', $user->name);
+        $baseSlug = Str::slug($workspaceName);
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (Tenant::query()->where('slug', $slug)->exists()) {
+            $slug = $baseSlug.'-'.$counter;
+            $counter++;
+        }
+
+        $tenant = Tenant::create([
+            'name' => $workspaceName,
+            'slug' => $slug,
+            'plan' => 'free',
+            'status' => 'active',
+            'trial_ends_at' => null,
+        ]);
+
+        TenantUser::create([
+            'tenant_id' => $tenant->id,
+            'user_id' => $user->id,
+            'role' => 'admin',
+            'status' => 'active',
+        ]);
 
         return $user;
     }

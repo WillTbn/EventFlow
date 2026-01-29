@@ -3,17 +3,18 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Services\TenantContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
-use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasRoles, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable;
 
     /**
      * The attributes that are mass assignable.
@@ -58,5 +59,59 @@ class User extends Authenticatable
     public function events(): HasMany
     {
         return $this->hasMany(Event::class, 'created_by');
+    }
+
+    /**
+     * Tenants the user belongs to.
+     */
+    public function tenants(): BelongsToMany
+    {
+        return $this->belongsToMany(Tenant::class, 'tenant_users')
+            ->using(TenantUser::class)
+            ->withPivot(['role', 'status'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Membership records for the user.
+     */
+    public function tenantMemberships(): HasMany
+    {
+        return $this->hasMany(TenantUser::class);
+    }
+
+    /**
+     * Get the user's role for a tenant.
+     */
+    public function tenantRole(?Tenant $tenant = null): ?string
+    {
+        $tenant ??= app(TenantContext::class)->get();
+
+        if (! $tenant) {
+            return null;
+        }
+
+        return $this->tenantMemberships()
+            ->where('tenant_id', $tenant->id)
+            ->where('status', 'active')
+            ->value('role');
+    }
+
+    /**
+     * Check if the user has one of the given roles for a tenant.
+     *
+     * @param array<int, string>|string $roles
+     */
+    public function hasTenantRole(array|string $roles, ?Tenant $tenant = null): bool
+    {
+        $role = $this->tenantRole($tenant);
+
+        if (! $role) {
+            return false;
+        }
+
+        $roles = is_array($roles) ? $roles : [$roles];
+
+        return in_array($role, $roles, true);
     }
 }

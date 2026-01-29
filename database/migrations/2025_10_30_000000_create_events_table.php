@@ -13,11 +13,14 @@ return new class extends Migration
     {
         Schema::create('events', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')
+                ->constrained('tenants')
+                ->cascadeOnDelete();
             $table->foreignId('created_by')
                 ->constrained('users')
                 ->cascadeOnDelete();
             $table->string('title');
-            $table->string('slug')->unique();
+            $table->string('slug');
             $table->text('description')->nullable();
             $table->string('location')->nullable();
             $table->dateTime('starts_at')->index();
@@ -26,6 +29,8 @@ return new class extends Migration
             $table->boolean('is_public')->default(false)->index();
             $table->unsignedInteger('capacity')->nullable();
             $table->timestamps();
+
+            $table->unique(['tenant_id', 'slug']);
         });
     }
 

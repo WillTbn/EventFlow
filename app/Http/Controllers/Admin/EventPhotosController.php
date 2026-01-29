@@ -20,6 +20,7 @@ class EventPhotosController extends Controller
      */
     public function updateMain(
         UpdateEventMainPhotoRequest $request,
+        string $tenantSlug,
         Event $event,
         StoreEventMainPhoto $storeEventMainPhoto
     ): RedirectResponse {
@@ -36,6 +37,7 @@ class EventPhotosController extends Controller
      */
     public function store(
         StoreEventPhotosRequest $request,
+        string $tenantSlug,
         Event $event,
         StoreEventPhotos $storeEventPhotos
     ): RedirectResponse {

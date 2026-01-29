@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('event_photos', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('tenant_id')
+                ->constrained('tenants')
+                ->cascadeOnDelete();
             $table->foreignId('event_id')
                 ->constrained('events')
                 ->cascadeOnDelete();

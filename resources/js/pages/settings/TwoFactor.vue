@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
 import { ShieldBan, ShieldCheck } from 'lucide-vue-next';
-import { onUnmounted, ref } from 'vue';
+import { computed, onUnmounted, ref } from 'vue';
 
 import HeadingSmall from '@/components/HeadingSmall.vue';
 import TwoFactorRecoveryCodes from '@/components/TwoFactorRecoveryCodes.vue';
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal.vue';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useTenantUrl } from '@/composables/useTenantUrl';
 import { useTwoFactorAuth } from '@/composables/useTwoFactorAuth';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
@@ -24,10 +25,28 @@ withDefaults(defineProps<Props>(), {
     twoFactorEnabled: false,
 });
 
+const { withTenantUrl } = useTenantUrl();
+
+const enableForm = computed(() => {
+    const form = enable.form();
+    return {
+        ...form,
+        action: withTenantUrl(form.action),
+    };
+});
+
+const disableForm = computed(() => {
+    const form = disable.form();
+    return {
+        ...form,
+        action: withTenantUrl(form.action),
+    };
+});
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Two-Factor Authentication',
-        href: show.url(),
+        href: withTenantUrl(show()),
     },
 ];
 
@@ -74,7 +93,7 @@ onUnmounted(() => {
                         </Button>
                         <Form
                             v-else
-                            v-bind="enable.form()"
+                            v-bind="enableForm"
                             @success="showSetupModal = true"
                             #default="{ processing }"
                         >
@@ -101,7 +120,7 @@ onUnmounted(() => {
                     <TwoFactorRecoveryCodes />
 
                     <div class="relative inline">
-                        <Form v-bind="disable.form()" #default="{ processing }">
+                        <Form v-bind="disableForm" #default="{ processing }">
                             <Button
                                 variant="destructive"
                                 type="submit"

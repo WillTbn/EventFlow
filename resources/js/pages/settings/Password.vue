@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 import PasswordController from '@/actions/App/Http/Controllers/Settings/PasswordController';
 import HeadingSmall from '@/components/HeadingSmall.vue';
@@ -7,15 +8,26 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTenantUrl } from '@/composables/useTenantUrl';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { edit } from '@/routes/user-password';
 import { type BreadcrumbItem } from '@/types';
 
+const { withTenantUrl } = useTenantUrl();
+
+const updateForm = computed(() => {
+    const form = PasswordController.update.form();
+    return {
+        ...form,
+        action: withTenantUrl(form.action),
+    };
+});
+
 const breadcrumbItems: BreadcrumbItem[] = [
     {
         title: 'Password settings',
-        href: edit().url,
+        href: withTenantUrl(edit()),
     },
 ];
 </script>
@@ -34,7 +46,7 @@ const breadcrumbItems: BreadcrumbItem[] = [
                 />
 
                 <Form
-                    v-bind="PasswordController.update.form()"
+                    v-bind="updateForm"
                     :options="{
                         preserveScroll: true,
                     }"

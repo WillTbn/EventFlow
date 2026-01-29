@@ -21,7 +21,7 @@ import {
     SidebarMenuItem,
     SidebarSeparator,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
+import { useTenantUrl } from '@/composables/useTenantUrl';
 import { index as adminEventsIndex } from '@/routes/admin/eventos';
 import { index as adminUsersIndex } from '@/routes/admin/usuarios';
 import { index as publicEventsIndex } from '@/routes/eventos';
@@ -30,23 +30,26 @@ import { type NavItem } from '@/types';
 import AppLogo from './AppLogo.vue';
 
 const page = usePage();
-const roles = computed<string[]>(() => (page.props.auth?.roles as string[] | undefined) ?? []);
-const isAdmin = computed(() => roles.value.includes('admin'));
-const isModerator = computed(() => roles.value.includes('moderator'));
+const tenantRole = computed<string | null>(
+    () => (page.props.auth?.tenant_role as string | undefined) ?? null,
+);
+const isAdmin = computed(() => tenantRole.value === 'admin');
+const isModerator = computed(() => tenantRole.value === 'moderator');
 const canManage = computed(() => isAdmin.value || isModerator.value);
 
-const primaryNavItems: NavItem[] = [
+const { withTenantUrl, dashboardUrl } = useTenantUrl();
+
+const primaryNavItems = computed<NavItem[]>(() => [
     {
         title: 'Dashboard',
-        href: dashboard(),
+        href: dashboardUrl.value,
         icon: LayoutGrid,
     },
-];
-
+]);
 const publicNavItems: NavItem[] = [
     {
         title: 'Eventos publicos',
-        href: publicEventsIndex(),
+        href: withTenantUrl(publicEventsIndex()),
         icon: Globe,
     },
 ];
@@ -57,18 +60,16 @@ const managementNavItems = computed<NavItem[]>(() => {
     return [
         {
             title: 'Eventos',
-            href: adminEventsIndex(),
+            href: withTenantUrl(adminEventsIndex()),
             icon: CalendarDays,
         },
         {
             title: 'Usuarios',
-            href: adminUsersIndex(),
+            href: withTenantUrl(adminUsersIndex()),
             icon: Users,
         },
     ];
 });
-
-
 
 const footerNavItems: NavItem[] = [
     {
@@ -85,7 +86,7 @@ const footerNavItems: NavItem[] = [
             <SidebarMenu>
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
-                        <Link :href="dashboard()">
+                        <Link :href="dashboardUrl">
                             <AppLogo />
                         </Link>
                     </SidebarMenuButton>
@@ -111,3 +112,5 @@ const footerNavItems: NavItem[] = [
     </Sidebar>
     <slot />
 </template>
+
+

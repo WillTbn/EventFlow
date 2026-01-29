@@ -8,7 +8,6 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class EventPhotosTest extends TestCase
@@ -19,15 +18,25 @@ class EventPhotosTest extends TestCase
     {
         Storage::fake('public');
 
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
-        $event = Event::factory()->create(['created_by' => $user->id]);
+        $event = Event::factory()->create([
+            'tenant_id' => $tenant->id,
+            'created_by' => $user->id,
+        ]);
         $photo = UploadedFile::fake()->image('main.jpg', 1600, 1200);
 
-        $response = $this->actingAs($user)->post(route('admin.eventos.foto-principal', $event), [
-            'main_photo' => $photo,
-        ]);
+        $response = $this->actingAsTenant($user, $tenant, 'admin')->post(
+            route('admin.eventos.foto-principal', [
+                'tenantSlug' => $tenant->slug,
+                'event' => $event,
+            ]),
+            [
+                'main_photo' => $photo,
+            ]
+        );
 
         $response->assertRedirect();
 
@@ -43,19 +52,27 @@ class EventPhotosTest extends TestCase
     {
         Storage::fake('public');
 
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
         $event = Event::factory()->create([
+            'tenant_id' => $tenant->id,
             'created_by' => $user->id,
             'ends_at' => now()->addDay(),
         ]);
 
         $photo = UploadedFile::fake()->image('story.jpg', 1200, 800);
 
-        $response = $this->actingAs($user)->post(route('admin.eventos.fotos', $event), [
-            'photos' => [$photo],
-        ]);
+        $response = $this->actingAsTenant($user, $tenant, 'admin')->post(
+            route('admin.eventos.fotos', [
+                'tenantSlug' => $tenant->slug,
+                'event' => $event,
+            ]),
+            [
+                'photos' => [$photo],
+            ]
+        );
 
         $response->assertForbidden();
         $this->assertDatabaseCount('event_photos', 0);
@@ -65,10 +82,12 @@ class EventPhotosTest extends TestCase
     {
         Storage::fake('public');
 
+        $tenant = $this->createTenant();
         $user = User::factory()->create();
-        $this->assignRole($user, 'admin');
+        $this->attachUserToTenant($user, $tenant, 'admin');
 
         $event = Event::factory()->create([
+            'tenant_id' => $tenant->id,
             'created_by' => $user->id,
             'ends_at' => now()->subDay(),
         ]);
@@ -78,9 +97,15 @@ class EventPhotosTest extends TestCase
             UploadedFile::fake()->image('story-2.jpg', 1200, 800),
         ];
 
-        $response = $this->actingAs($user)->post(route('admin.eventos.fotos', $event), [
-            'photos' => $photos,
-        ]);
+        $response = $this->actingAsTenant($user, $tenant, 'admin')->post(
+            route('admin.eventos.fotos', [
+                'tenantSlug' => $tenant->slug,
+                'event' => $event,
+            ]),
+            [
+                'photos' => $photos,
+            ]
+        );
 
         $response->assertRedirect();
         $this->assertDatabaseCount('event_photos', 2);
@@ -89,11 +114,5 @@ class EventPhotosTest extends TestCase
         Storage::disk('public')->assertExists($storedPhoto->original_path);
         Storage::disk('public')->assertExists($storedPhoto->medium_path);
         Storage::disk('public')->assertExists($storedPhoto->thumb_path);
-    }
-
-    private function assignRole(User $user, string $role): void
-    {
-        Role::firstOrCreate(['name' => $role]);
-        $user->assignRole($role);
     }
 }

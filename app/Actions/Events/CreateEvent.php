@@ -4,10 +4,15 @@ namespace App\Actions\Events;
 
 use App\Models\Event;
 use App\Models\User;
+use App\Services\TenantContext;
 use Illuminate\Support\Str;
 
 class CreateEvent
 {
+    public function __construct(private TenantContext $tenantContext)
+    {
+    }
+
     /**
      * Create a new event for the given user.
      *
@@ -26,12 +31,14 @@ class CreateEvent
 
     protected function makeUniqueSlug(string $title, ?int $exceptId = null): string
     {
+        $tenantId = $this->tenantContext->id();
         $baseSlug = Str::slug($title);
         $slug = $baseSlug;
         $counter = 1;
 
         while (
             Event::query()
+                ->when($tenantId, fn ($query) => $query->where('tenant_id', $tenantId))
                 ->where('slug', $slug)
                 ->when($exceptId, fn ($query) => $query->whereKeyNot($exceptId))
                 ->exists()

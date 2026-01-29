@@ -6,6 +6,7 @@ import type { DefineComponent } from 'vue';
 import { createApp, h } from 'vue';
 
 import { initializeTheme } from './composables/useAppearance';
+import { setUrlDefaults } from './wayfinder';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -17,6 +18,16 @@ createInertiaApp({
             import.meta.glob<DefineComponent>('./pages/**/*.vue'),
         ),
     setup({ el, App, props, plugin }) {
+        setUrlDefaults(() => {
+            if (typeof window === 'undefined') {
+                return {};
+            }
+
+            const match = window.location.pathname.match(/^\/t\/([^/]+)/);
+
+            return match ? { tenantSlug: match[1] } : {};
+        });
+
         createApp({ render: () => h(App, props) })
             .use(plugin)
             .mount(el);

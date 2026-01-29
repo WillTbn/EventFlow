@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/DeleteUser.vue';
@@ -8,6 +9,7 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTenantUrl } from '@/composables/useTenantUrl';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { edit } from '@/routes/profile';
@@ -21,10 +23,20 @@ interface Props {
 
 defineProps<Props>();
 
+const { withTenantUrl } = useTenantUrl();
+
+const updateForm = computed(() => {
+    const form = ProfileController.update.form();
+    return {
+        ...form,
+        action: withTenantUrl(form.action),
+    };
+});
+
 const breadcrumbItems: BreadcrumbItem[] = [
     {
         title: 'Profile settings',
-        href: edit().url,
+        href: withTenantUrl(edit()),
     },
 ];
 
@@ -46,7 +58,7 @@ const user = page.props.auth.user;
                 />
 
                 <Form
-                    v-bind="ProfileController.update.form()"
+                    v-bind="updateForm"
                     class="space-y-6"
                     v-slot="{ errors, processing, recentlySuccessful }"
                 >
@@ -83,7 +95,7 @@ const user = page.props.auth.user;
                         <p class="-mt-4 text-sm text-muted-foreground">
                             Your email address is unverified.
                             <Link
-                                :href="send()"
+                                :href="withTenantUrl(send())"
                                 as="button"
                                 class="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
                             >

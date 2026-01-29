@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Event;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -30,6 +31,7 @@ class EventFactory extends Factory
         $startsAt = fake()->dateTimeBetween('+1 day', '+1 month');
 
         return [
+            'tenant_id' => Tenant::factory(),
             'created_by' => User::factory(),
             'title' => $title,
             'slug' => Str::slug($title).'-'.Str::lower(Str::random(6)),

@@ -1,22 +1,51 @@
 <?php
 
-use App\Http\Controllers\Public\EventsController;
+use App\Http\Controllers\Central\WorkspacesController;
+use App\Services\TenantContext;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
-Route::get('/', function () {
+Route::get('/', function (Request $request) {
+    $user = $request->user();
+    $dashboardUrl = null;
+
+    if ($user) {
+        $currentTenantId = $request->session()->get(TenantContext::SESSION_KEY);
+        $membershipQuery = $user->tenantMemberships()
+            ->with('tenant')
+            ->where('status', 'active');
+
+        $membership = null;
+
+        if ($currentTenantId) {
+            $membership = (clone $membershipQuery)
+                ->where('tenant_id', $currentTenantId)
+                ->first();
+        }
+
+        if (! $membership) {
+            $membership = $membershipQuery->orderBy('id')->first();
+        }
+
+        if ($membership?->tenant) {
+            $dashboardUrl = '/t/'.$membership->tenant->slug.'/admin';
+        }
+    }
+
     return Inertia::render('Welcome', [
         'canRegister' => Features::enabled(Features::registration()),
+        'dashboardUrl' => $dashboardUrl,
     ]);
 })->name('home');
 
-Route::get('dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified', 'role:admin|moderator'])->name('dashboard');
+Route::get('pricing', function () {
+    return Inertia::render('Pricing');
+})->name('pricing');
 
-Route::get('eventos', [EventsController::class, 'index'])->name('eventos.index');
-Route::get('eventos/{event:slug}', [EventsController::class, 'show'])->name('eventos.show');
+Route::middleware(['auth'])->group(function () {
+    Route::get('workspaces', [WorkspacesController::class, 'index'])->name('workspaces');
+});
 
-require __DIR__.'/settings.php';
-require __DIR__.'/admin.php';
+require __DIR__.'/tenant.php';

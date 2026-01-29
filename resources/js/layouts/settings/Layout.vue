@@ -5,6 +5,7 @@ import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useActiveUrl } from '@/composables/useActiveUrl';
+import { useTenantUrl } from '@/composables/useTenantUrl';
 import { toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit as editProfile } from '@/routes/profile';
@@ -12,22 +13,24 @@ import { show } from '@/routes/two-factor';
 import { edit as editPassword } from '@/routes/user-password';
 import { type NavItem } from '@/types';
 
+const { withTenantUrl } = useTenantUrl();
+
 const sidebarNavItems: NavItem[] = [
     {
         title: 'Profile',
-        href: editProfile(),
+        href: withTenantUrl(editProfile()),
     },
     {
         title: 'Password',
-        href: editPassword(),
+        href: withTenantUrl(editPassword()),
     },
     {
         title: 'Two-Factor Auth',
-        href: show(),
+        href: withTenantUrl(show()),
     },
     {
         title: 'Appearance',
-        href: editAppearance(),
+        href: withTenantUrl(editAppearance()),
     },
 ];
 

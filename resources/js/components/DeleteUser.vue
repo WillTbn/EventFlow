@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import { useTemplateRef } from 'vue';
 
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
@@ -18,8 +19,18 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTenantUrl } from '@/composables/useTenantUrl';
 
 const passwordInput = useTemplateRef('passwordInput');
+const { withTenantUrl } = useTenantUrl();
+
+const destroyForm = computed(() => {
+    const form = ProfileController.destroy.form();
+    return {
+        ...form,
+        action: withTenantUrl(form.action),
+    };
+});
 </script>
 
 <template>
@@ -45,7 +56,7 @@ const passwordInput = useTemplateRef('passwordInput');
                 </DialogTrigger>
                 <DialogContent>
                     <Form
-                        v-bind="ProfileController.destroy.form()"
+                        v-bind="destroyForm"
                         reset-on-success
                         @error="() => passwordInput?.$el?.focus()"
                         :options="{

@@ -8,6 +8,7 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import { useTenantUrl } from '@/composables/useTenantUrl';
 import UserInfo from '@/components/UserInfo.vue';
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
@@ -21,6 +22,8 @@ const handleLogout = () => {
     router.flushAll();
 };
 
+const { withTenantUrl } = useTenantUrl();
+
 defineProps<Props>();
 </script>
 
@@ -33,7 +36,11 @@ defineProps<Props>();
     <DropdownMenuSeparator />
     <DropdownMenuGroup>
         <DropdownMenuItem :as-child="true">
-            <Link class="block w-full cursor-pointer" :href="edit()" prefetch>
+            <Link
+                class="block w-full cursor-pointer"
+                :href="withTenantUrl(edit())"
+                prefetch
+            >
                 <Settings class="mr-2 h-4 w-4" />
                 Settings
             </Link>

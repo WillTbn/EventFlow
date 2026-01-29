@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,13 +36,23 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $tenant = app(TenantContext::class)->get();
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),
-                'roles' => $request->user()?->getRoleNames()->values()->all() ?? [],
+                'tenant_role' => $request->user()?->tenantRole($tenant),
             ],
+            'tenant' => $tenant ? [
+                'id' => $tenant->id,
+                'name' => $tenant->name,
+                'slug' => $tenant->slug,
+                'plan' => $tenant->plan,
+                'status' => $tenant->status,
+                'trial_ends_at' => $tenant->trial_ends_at,
+            ] : null,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

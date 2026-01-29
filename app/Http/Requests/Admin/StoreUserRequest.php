@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Services\TenantContext;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,7 +17,8 @@ class StoreUserRequest extends FormRequest
      */
     public function rules(): array
     {
-        $roleOptions = $this->user()->hasRole('admin')
+        $tenant = app(TenantContext::class)->get();
+        $roleOptions = $this->user()?->hasTenantRole('admin', $tenant)
             ? ['admin', 'moderator', 'member']
             : ['member'];
 

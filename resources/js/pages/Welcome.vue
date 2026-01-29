@@ -1,6 +1,47 @@
 <script setup lang="ts">
+import { Link, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
+const page = usePage();
 
+const isAuthenticated = computed(() => Boolean(page.props.auth?.user));
+const canRegister = computed(() => Boolean(page.props.canRegister));
+const dashboardUrl = computed(
+    () => (page.props.dashboardUrl as string | null) ?? null,
+);
+
+const loginUrl = '/login';
+const registerUrl = '/register';
+
+const primaryCta = computed(() => {
+    if (isAuthenticated.value) {
+        return {
+            label: 'Entrar no dashboard',
+            href: dashboardUrl.value ?? '/workspaces',
+        };
+    }
+
+    return {
+        label: 'Fazer login',
+        href: loginUrl,
+    };
+});
+
+const secondaryCta = computed(() => {
+    if (isAuthenticated.value || !canRegister.value) {
+        return null;
+    }
+
+    return {
+        label: 'Criar conta',
+        href: registerUrl,
+    };
+});
+
+const tutorialCta = computed(() => ({
+    label: isAuthenticated.value ? 'Abrir dashboard' : 'Ver painel completo',
+    href: isAuthenticated.value ? dashboardUrl.value ?? '/workspaces' : loginUrl,
+}));
 </script>
 
 <template>
@@ -22,10 +63,17 @@
                     </p>
                     <div class="flex flex-wrap items-center gap-3">
                         <Link
-                            href="/login"
+                            :href="primaryCta.href"
                             class="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
                         >
-                            Comecar agora
+                            {{ primaryCta.label }}
+                        </Link>
+                        <Link
+                            v-if="secondaryCta"
+                            :href="secondaryCta.href"
+                            class="rounded-full border border-slate-300 px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:border-slate-400"
+                        >
+                            {{ secondaryCta.label }}
                         </Link>
                         <Link
                             href="#tutorial"
@@ -132,10 +180,10 @@
                     </p>
                 </div>
                 <Link
-                    href="/login"
+                    :href="tutorialCta.href"
                     class="rounded-full border border-slate-300 px-5 py-2 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:border-slate-400"
                 >
-                    Ver painel completo
+                    {{ tutorialCta.label }}
                 </Link>
             </div>
 
@@ -195,3 +243,6 @@
     font-family: 'Sora', 'Avenir Next', 'Segoe UI', 'Helvetica Neue', sans-serif;
 }
 </style>
+
+
+
