@@ -31,6 +31,12 @@ interface Pagination<T> {
 
 defineProps<{
     events: Pagination<EventListItem>;
+    eventQuota: {
+        plan: string | null;
+        events_this_month: number;
+        events_limit: number | null;
+        can_create_event: boolean;
+    };
 }>();
 
 const { withTenantUrl } = useTenantUrl();
@@ -55,9 +61,23 @@ const breadcrumbs: BreadcrumbItem[] = [
                 </p>
             </div>
 
-            <Button as-child>
+            <Button v-if="eventQuota.can_create_event" as-child>
                 <Link :href="withTenantUrl(create())">Novo evento</Link>
             </Button>
+            <Button v-else disabled>Novo evento</Button>
+        </div>
+
+        <div
+            v-if="!eventQuota.can_create_event && eventQuota.events_limit !== null"
+            class="mt-4 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        >
+            <div class="flex flex-wrap items-center gap-2">
+                <span>
+                    Limite do plano {{ eventQuota.plan ?? 'Free' }} atingido
+                    ({{ eventQuota.events_limit }} evento(s)/mes).
+                </span>
+                <Link class="underline" href="/pricing">Fazer upgrade</Link>
+            </div>
         </div>
 
         <Card class="mt-6">

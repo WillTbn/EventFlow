@@ -51,6 +51,34 @@ class AdminEventsTest extends TestCase
             );
     }
 
+    public function test_admin_index_isolated_by_tenant()
+    {
+        $tenantA = $this->createTenant();
+        $tenantB = $this->createTenant();
+        $user = User::factory()->create();
+
+        $this->attachUserToTenant($user, $tenantA, 'admin');
+        $this->attachUserToTenant($user, $tenantB, 'admin');
+
+        $eventA = Event::factory()->create([
+            'tenant_id' => $tenantA->id,
+            'created_by' => $user->id,
+        ]);
+        Event::factory()->create([
+            'tenant_id' => $tenantB->id,
+            'created_by' => $user->id,
+        ]);
+
+        $this->actingAsTenant($user, $tenantA, 'admin')
+            ->get(route('admin.eventos.index', ['tenantSlug' => $tenantA->slug]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('admin/events/Index')
+                ->has('events.data', 1)
+                ->where('events.data.0.id', $eventA->id)
+            );
+    }
+
     public function test_admin_can_create_event()
     {
         $tenant = $this->createTenant();
@@ -123,6 +151,36 @@ class AdminEventsTest extends TestCase
         Storage::disk('public')->assertExists($event->main_photo_path);
         Storage::disk('public')->assertExists($event->main_photo_medium_path);
         Storage::disk('public')->assertExists($event->main_photo_thumb_path);
+    }
+
+    public function test_free_plan_blocks_second_event_in_month(): void
+    {
+        $tenant = $this->createTenant(['plan' => 'free']);
+        $user = User::factory()->create();
+        $this->attachUserToTenant($user, $tenant, 'admin');
+
+        Event::factory()->create([
+            'tenant_id' => $tenant->id,
+            'created_by' => $user->id,
+            'created_at' => now()->startOfMonth()->addDay(),
+        ]);
+
+        $startsAt = now()->addDays(2)->setTime(10, 0);
+        $endsAt = (clone $startsAt)->addHours(2);
+
+        $response = $this->actingAsTenant($user, $tenant, 'admin')
+            ->postJson(route('admin.eventos.store', ['tenantSlug' => $tenant->slug]), [
+                'title' => 'Segundo evento',
+                'description' => 'Descricao do evento',
+                'location' => 'Sao Paulo',
+                'starts_at' => $startsAt->format('Y-m-d H:i:s'),
+                'ends_at' => $endsAt->format('Y-m-d H:i:s'),
+                'status' => 'draft',
+                'is_public' => true,
+                'capacity' => 100,
+            ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors(['event']);
     }
 
     public function test_admin_cannot_edit_other_users_event()

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Services\PlanService;
+use App\Services\TenantContext;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -26,5 +28,29 @@ class StoreEventRequest extends FormRequest
             'capacity' => ['nullable', 'integer', 'min:1'],
             'main_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator): void {
+            $tenant = app(TenantContext::class)->get();
+
+            if (! $tenant) {
+                return;
+            }
+
+            $planService = app(PlanService::class);
+
+            if (! $planService->canCreateEvent($tenant)) {
+                $limit = $planService->eventLimitPerMonth($tenant);
+                $plan = $planService->planLabel($tenant);
+                $limitLabel = $limit ? $limit.' evento(s)/mes' : 'eventos ilimitados';
+
+                $validator->errors()->add(
+                    'event',
+                    "Limite do plano {$plan} atingido ({$limitLabel})."
+                );
+            }
+        });
     }
 }

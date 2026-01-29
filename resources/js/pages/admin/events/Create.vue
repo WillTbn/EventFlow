@@ -13,6 +13,15 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { create, index, store } from '@/routes/admin/eventos';
 import { type BreadcrumbItem } from '@/types';
 
+defineProps<{
+    eventQuota: {
+        plan: string | null;
+        events_this_month: number;
+        events_limit: number | null;
+        can_create_event: boolean;
+    };
+}>();
+
 const { withTenantUrl } = useTenantUrl();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -36,6 +45,19 @@ const breadcrumbs: BreadcrumbItem[] = [
                 <CardTitle>Novo evento</CardTitle>
             </CardHeader>
             <CardContent>
+                <div
+                    v-if="!eventQuota.can_create_event && eventQuota.events_limit !== null"
+                    class="mb-4 rounded border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+                >
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span>
+                            Limite do plano {{ eventQuota.plan ?? 'Free' }} atingido
+                            ({{ eventQuota.events_limit }} evento(s)/mes).
+                        </span>
+                        <Link class="underline" href="/pricing">Fazer upgrade</Link>
+                    </div>
+                </div>
+
                 <Form
                     :action="withTenantUrl(store().url)"
                     method="post"
@@ -43,6 +65,8 @@ const breadcrumbs: BreadcrumbItem[] = [
                     v-slot="{ errors, processing }"
                     class="space-y-6"
                 >
+                    <InputError v-if="errors.event" :message="errors.event" />
+
                     <div class="grid gap-2">
                         <Label for="title">Titulo</Label>
                         <Input id="title" name="title" placeholder="Nome do evento" />
@@ -111,7 +135,9 @@ const breadcrumbs: BreadcrumbItem[] = [
                     </div>
 
                     <div class="flex items-center gap-4">
-                        <Button :disabled="processing">Salvar</Button>
+                        <Button :disabled="processing || !eventQuota.can_create_event">
+                            Salvar
+                        </Button>
                         <Link class="text-sm text-muted-foreground" :href="withTenantUrl(index())">
                             Cancelar
                         </Link>

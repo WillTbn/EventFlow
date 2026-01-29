@@ -10,6 +10,8 @@ use App\Http\Requests\Admin\StoreEventRequest;
 use App\Http\Requests\Admin\UpdateEventRequest;
 use App\Models\Event;
 use App\Models\EventPhoto;
+use App\Models\Tenant;
+use App\Services\PlanService;
 use App\Services\TenantContext;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +24,10 @@ class EventsController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct(private TenantContext $tenantContext)
+    public function __construct(
+        private TenantContext $tenantContext,
+        private PlanService $planService
+    )
     {
         // Map resource abilities to policy methods.
         $this->authorizeResource(Event::class, 'event');
@@ -47,8 +52,11 @@ class EventsController extends Controller
                 'ends_at' => $event->ends_at?->format('Y-m-d H:i'),
             ]);
 
+        $tenant = $this->tenantContext->get();
+
         return Inertia::render('admin/events/Index', [
             'events' => $events,
+            'eventQuota' => $this->eventQuotaPayload($tenant),
         ]);
     }
 
@@ -57,7 +65,11 @@ class EventsController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('admin/events/Create');
+        $tenant = $this->tenantContext->get();
+
+        return Inertia::render('admin/events/Create', [
+            'eventQuota' => $this->eventQuotaPayload($tenant),
+        ]);
     }
 
     /**
@@ -137,6 +149,30 @@ class EventsController extends Controller
         return to_route('admin.eventos.index', [
             'tenantSlug' => $this->tenantContext->get()?->slug,
         ]);
+    }
+
+    /**
+     * Build the event quota payload for the UI.
+     *
+     * @return array<string, mixed>
+     */
+    protected function eventQuotaPayload(?Tenant $tenant): array
+    {
+        if (! $tenant) {
+            return [
+                'plan' => null,
+                'events_this_month' => 0,
+                'events_limit' => null,
+                'can_create_event' => false,
+            ];
+        }
+
+        return [
+            'plan' => $this->planService->planLabel($tenant),
+            'events_this_month' => $this->planService->eventsCreatedThisMonth($tenant),
+            'events_limit' => $this->planService->eventLimitPerMonth($tenant),
+            'can_create_event' => $this->planService->canCreateEvent($tenant),
+        ];
     }
 }
 
