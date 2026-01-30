@@ -56,21 +56,9 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <InputError :message="errors.email" />
                     </div>
 
-                    <div class="grid gap-2">
-                        <Label for="password">Senha</Label>
-                        <Input id="password" name="password" type="password" />
-                        <InputError :message="errors.password" />
-                    </div>
-
-                    <div class="grid gap-2">
-                        <Label for="password_confirmation">Confirmar senha</Label>
-                        <Input
-                            id="password_confirmation"
-                            name="password_confirmation"
-                            type="password"
-                        />
-                        <InputError :message="errors.password_confirmation" />
-                    </div>
+                    <p class="text-sm text-muted-foreground">
+                        Enviaremos um link para o usuário definir a senha de acesso.
+                    </p>
 
                     <div class="grid gap-2">
                         <Label for="role">Role</Label>

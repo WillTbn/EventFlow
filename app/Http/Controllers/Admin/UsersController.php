@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
+use App\Actions\Users\CreateUserAndSendSetPasswordLink;
 use App\Models\TenantUser;
 use App\Models\User;
 use App\Services\TenantContext;
@@ -71,24 +72,13 @@ class UsersController extends Controller
     /**
      * Store a newly created user in storage.
      */
-    public function store(StoreUserRequest $request): RedirectResponse
+    public function store(StoreUserRequest $request, CreateUserAndSendSetPasswordLink $creator): RedirectResponse
     {
         $tenant = $this->tenantContext->get();
         $data = $request->validated();
         $role = $this->resolvedRole($request->user(), $tenant, $data['role']);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => $data['password'],
-        ]);
-
-        TenantUser::create([
-            'tenant_id' => $tenant->id,
-            'user_id' => $user->id,
-            'role' => $role,
-            'status' => 'active',
-        ]);
+        $user = $creator->handle($data, $role);
 
         return to_route('admin.usuarios.edit', [
             'tenantSlug' => $tenant->slug,

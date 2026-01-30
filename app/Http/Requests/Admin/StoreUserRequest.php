@@ -6,7 +6,6 @@ use App\Services\TenantContext;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 
 class StoreUserRequest extends FormRequest
 {
@@ -24,8 +23,7 @@ class StoreUserRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')],
-            'password' => ['required', 'string', Password::default(), 'confirmed'],
+            'email' => ['required', 'string', 'email', 'max:255'],
             'role' => ['required', Rule::in($roleOptions)],
         ];
     }

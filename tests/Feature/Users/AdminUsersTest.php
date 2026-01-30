@@ -3,7 +3,9 @@
 namespace Tests\Feature\Users;
 
 use App\Models\User;
+use App\Notifications\SetPasswordNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -69,6 +71,8 @@ class AdminUsersTest extends TestCase
 
     public function test_admin_can_create_moderator_user(): void
     {
+        Notification::fake();
+
         $tenant = $this->createTenant();
         $admin = User::factory()->create();
 
@@ -78,14 +82,13 @@ class AdminUsersTest extends TestCase
             ->post(route('admin.usuarios.store', ['tenantSlug' => $tenant->slug]), [
                 'name' => 'Moderator User',
                 'email' => 'moderator@example.com',
-                'password' => 'password123',
-                'password_confirmation' => 'password123',
                 'role' => 'moderator',
             ]);
 
         $createdUser = User::query()->where('email', 'moderator@example.com')->first();
 
         $this->assertNotNull($createdUser);
+        Notification::assertSentTo($createdUser, SetPasswordNotification::class);
         $this->assertDatabaseHas('tenant_users', [
             'tenant_id' => $tenant->id,
             'user_id' => $createdUser->id,
@@ -96,6 +99,8 @@ class AdminUsersTest extends TestCase
 
     public function test_moderator_can_only_create_member_users(): void
     {
+        Notification::fake();
+
         $tenant = $this->createTenant();
         $moderator = User::factory()->create();
 
@@ -105,8 +110,6 @@ class AdminUsersTest extends TestCase
             ->post(route('admin.usuarios.store', ['tenantSlug' => $tenant->slug]), [
                 'name' => 'Admin Attempt',
                 'email' => 'admin-attempt@example.com',
-                'password' => 'password123',
-                'password_confirmation' => 'password123',
                 'role' => 'admin',
             ]);
 
@@ -118,6 +121,8 @@ class AdminUsersTest extends TestCase
 
     public function test_moderator_can_create_member_user(): void
     {
+        Notification::fake();
+
         $tenant = $this->createTenant();
         $moderator = User::factory()->create();
 
@@ -127,19 +132,47 @@ class AdminUsersTest extends TestCase
             ->post(route('admin.usuarios.store', ['tenantSlug' => $tenant->slug]), [
                 'name' => 'Member User',
                 'email' => 'member@example.com',
-                'password' => 'password123',
-                'password_confirmation' => 'password123',
                 'role' => 'member',
             ]);
 
         $createdUser = User::query()->where('email', 'member@example.com')->first();
 
         $this->assertNotNull($createdUser);
+        Notification::assertSentTo($createdUser, SetPasswordNotification::class);
         $this->assertDatabaseHas('tenant_users', [
             'tenant_id' => $tenant->id,
             'user_id' => $createdUser->id,
             'role' => 'member',
         ]);
         $response->assertRedirect(route('admin.usuarios.edit', ['tenantSlug' => $tenant->slug, 'user' => $createdUser]));
+    }
+
+    public function test_admin_can_attach_existing_user_and_send_invite(): void
+    {
+        Notification::fake();
+
+        $tenant = $this->createTenant();
+        $admin = User::factory()->create();
+        $existingUser = User::factory()->create([
+            'email' => 'existing@example.com',
+        ]);
+
+        $this->attachUserToTenant($admin, $tenant, 'admin');
+
+        $response = $this->actingAsTenant($admin, $tenant, 'admin')
+            ->post(route('admin.usuarios.store', ['tenantSlug' => $tenant->slug]), [
+                'name' => 'Existing User',
+                'email' => 'existing@example.com',
+                'role' => 'member',
+            ]);
+
+        $this->assertSame($existingUser->id, User::query()->where('email', 'existing@example.com')->value('id'));
+        $this->assertDatabaseHas('tenant_users', [
+            'tenant_id' => $tenant->id,
+            'user_id' => $existingUser->id,
+            'role' => 'member',
+        ]);
+        Notification::assertSentTo($existingUser, SetPasswordNotification::class);
+        $response->assertRedirect(route('admin.usuarios.edit', ['tenantSlug' => $tenant->slug, 'user' => $existingUser]));
     }
 }
