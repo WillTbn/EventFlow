@@ -12,7 +12,7 @@ class EventPolicy
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $this->canManageEvents($user);
     }
 
     /**
@@ -32,7 +32,7 @@ class EventPolicy
      */
     public function create(User $user): bool
     {
-        return true;
+        return $user->hasTenantRole('admin');
     }
 
     /**
@@ -40,7 +40,7 @@ class EventPolicy
      */
     public function update(User $user, Event $event): bool
     {
-        return $user->id === $event->created_by;
+        return $this->canManageEvents($user);
     }
 
     /**
@@ -48,7 +48,7 @@ class EventPolicy
      */
     public function addPhotos(User $user, Event $event): bool
     {
-        if ($user->id !== $event->created_by) {
+        if (! $this->canManageEvents($user)) {
             return false;
         }
 
@@ -64,6 +64,11 @@ class EventPolicy
      */
     public function delete(User $user, Event $event): bool
     {
-        return $user->id === $event->created_by;
+        return $user->hasTenantRole('admin');
+    }
+
+    private function canManageEvents(User $user): bool
+    {
+        return $user->hasTenantRole(['admin', 'moderator']);
     }
 }

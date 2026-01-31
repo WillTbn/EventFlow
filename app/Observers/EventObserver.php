@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Event;
 use Vinkla\Hashids\Facades\Hashids;
+
 class EventObserver
 {
 
@@ -16,7 +17,6 @@ class EventObserver
             return;
         }
 
-        $event->hash_id = Hashids::encode(now()->timestamp);
-
+        $event->hash_id = Hashids::encode(now()->timestamp, random_int(1, 999_999));
     }
 }

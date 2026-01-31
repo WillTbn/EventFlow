@@ -11,6 +11,7 @@ use App\Http\Requests\Admin\UpdateEventRequest;
 use App\Models\Event;
 use App\Models\EventPhoto;
 use App\Models\Tenant;
+use App\Models\User;
 use App\Services\PlanService;
 use App\Services\TenantContext;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -39,7 +40,6 @@ class EventsController extends Controller
     public function index(Request $request): Response
     {
         $events = Event::query()
-            ->where('created_by', $request->user()->id)
             ->latest('starts_at')
             ->paginate(10)
             ->withQueryString()
@@ -57,19 +57,19 @@ class EventsController extends Controller
 
         return Inertia::render('admin/events/Index', [
             'events' => $events,
-            'eventQuota' => $this->eventQuotaPayload($tenant),
+            'eventQuota' => $this->eventQuotaPayload($tenant, $request->user()),
         ]);
     }
 
     /**
      * Show the form for creating a new event.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
         $tenant = $this->tenantContext->get();
 
         return Inertia::render('admin/events/Create', [
-            'eventQuota' => $this->eventQuotaPayload($tenant),
+            'eventQuota' => $this->eventQuotaPayload($tenant, $request->user()),
         ]);
     }
 
@@ -158,7 +158,7 @@ class EventsController extends Controller
      *
      * @return array<string, mixed>
      */
-    protected function eventQuotaPayload(?Tenant $tenant): array
+    protected function eventQuotaPayload(?Tenant $tenant, ?User $user): array
     {
         if (! $tenant) {
             return [
@@ -169,12 +169,13 @@ class EventsController extends Controller
             ];
         }
 
+        $canCreateEvent = $user?->can('create', Event::class) ?? false;
+
         return [
             'plan' => $this->planService->planLabel($tenant),
             'events_this_month' => $this->planService->eventsCreatedThisMonth($tenant),
             'events_limit' => $this->planService->eventLimitPerMonth($tenant),
-            'can_create_event' => $this->planService->canCreateEvent($tenant),
+            'can_create_event' => $this->planService->canCreateEvent($tenant) && $canCreateEvent,
         ];
     }
 }
-

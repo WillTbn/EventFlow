@@ -23,7 +23,7 @@ class AdminEventsTest extends TestCase
             ->assertRedirect(route('login'));
     }
 
-    public function test_admin_index_shows_only_own_events()
+    public function test_admin_index_shows_all_events_for_tenant()
     {
         $tenant = $this->createTenant();
         $user = User::factory()->create();
@@ -46,8 +46,10 @@ class AdminEventsTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('admin/events/Index')
-                ->has('events.data', 1)
-                ->where('events.data.0.id', $ownEvent->id)
+                ->has('events.data', 2)
+                ->where('events.data', fn ($events) => collect($events)
+                    ->pluck('id')
+                    ->contains($ownEvent->id))
             );
     }
 
@@ -204,7 +206,7 @@ class AdminEventsTest extends TestCase
         $response->assertStatus(422)->assertJsonValidationErrors(['event']);
     }
 
-    public function test_admin_cannot_edit_other_users_event()
+    public function test_admin_can_edit_other_users_event()
     {
         $tenant = $this->createTenant();
         $user = User::factory()->create();
@@ -223,7 +225,7 @@ class AdminEventsTest extends TestCase
                 'tenantSlug' => $tenant->slug,
                 'event' => $event,
             ]))
-            ->assertForbidden();
+            ->assertOk();
     }
 
     public function test_admin_can_update_own_event()
@@ -288,6 +290,70 @@ class AdminEventsTest extends TestCase
         $response->assertRedirect(route('admin.eventos.index', ['tenantSlug' => $tenant->slug]));
         $this->assertDatabaseMissing('events', [
             'id' => $event->id,
+        ]);
+    }
+
+    public function test_moderator_cannot_create_event(): void
+    {
+        $tenant = $this->createTenant();
+        $moderator = User::factory()->create();
+        $this->attachUserToTenant($moderator, $tenant, 'moderator');
+
+        $startsAt = now()->addDays(2)->setTime(10, 0);
+        $endsAt = (clone $startsAt)->addHours(2);
+
+        $this->actingAsTenant($moderator, $tenant, 'moderator')
+            ->post(route('admin.eventos.store', ['tenantSlug' => $tenant->slug]), [
+                'title' => 'Evento do moderador',
+                'description' => 'Descricao do evento',
+                'location' => 'Sao Paulo',
+                'starts_at' => $startsAt->format('Y-m-d H:i:s'),
+                'ends_at' => $endsAt->format('Y-m-d H:i:s'),
+                'status' => 'draft',
+                'is_public' => true,
+                'capacity' => 100,
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_moderator_can_update_event_from_other_user(): void
+    {
+        $tenant = $this->createTenant();
+        $moderator = User::factory()->create();
+        $admin = User::factory()->create();
+
+        $this->attachUserToTenant($moderator, $tenant, 'moderator');
+        $this->attachUserToTenant($admin, $tenant, 'admin');
+
+        $event = Event::factory()->create([
+            'tenant_id' => $tenant->id,
+            'created_by' => $admin->id,
+            'title' => 'Evento original',
+        ]);
+
+        $response = $this->actingAsTenant($moderator, $tenant, 'moderator')
+            ->put(route('admin.eventos.update', [
+                'tenantSlug' => $tenant->slug,
+                'event' => $event->hash_id,
+            ]), [
+                'title' => 'Evento atualizado',
+                'description' => $event->description,
+                'location' => $event->location,
+                'starts_at' => $event->starts_at?->format('Y-m-d H:i:s'),
+                'ends_at' => $event->ends_at?->format('Y-m-d H:i:s'),
+                'status' => $event->status,
+                'is_public' => $event->is_public,
+                'capacity' => $event->capacity,
+            ]);
+
+        $response->assertRedirect(route('admin.eventos.edit', [
+            'tenantSlug' => $tenant->slug,
+            'event' => $event->hash_id,
+        ]));
+
+        $this->assertDatabaseHas('events', [
+            'id' => $event->id,
+            'title' => 'Evento atualizado',
         ]);
     }
 }
