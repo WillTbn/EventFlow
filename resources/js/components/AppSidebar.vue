@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     CalendarDays,
+    Building2,
     Globe,
     LayoutGrid,
     Users,
@@ -24,6 +25,7 @@ import {
 import { useTenantUrl } from '@/composables/useTenantUrl';
 import { index as adminEventsIndex } from '@/routes/admin/eventos';
 import { index as adminUsersIndex } from '@/routes/admin/usuarios';
+import { edit as adminWorkspaceEdit } from '@/routes/admin/workspace';
 import { index as publicEventsIndex } from '@/routes/eventos';
 import { type NavItem } from '@/types';
 
@@ -57,7 +59,7 @@ const publicNavItems: NavItem[] = [
 const managementNavItems = computed<NavItem[]>(() => {
     if (!canManage.value) return [];
 
-    return [
+    const items: NavItem[] = [
         {
             title: 'Eventos',
             href: withTenantUrl(adminEventsIndex()),
@@ -69,6 +71,16 @@ const managementNavItems = computed<NavItem[]>(() => {
             icon: Users,
         },
     ];
+
+    if (isAdmin.value) {
+        items.push({
+            title: 'Workspace',
+            href: withTenantUrl(adminWorkspaceEdit()),
+            icon: Building2,
+        });
+    }
+
+    return items;
 });
 
 const footerNavItems: NavItem[] = [

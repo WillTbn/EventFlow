@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\EventPhotosController;
 use App\Http\Controllers\Admin\EventsController;
 use App\Http\Controllers\Admin\UsersController;
+use App\Http\Controllers\Admin\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -32,4 +33,12 @@ Route::middleware(['auth', 'verified', 'setCurrentTenant', 'tenantRole:admin,mod
 
         Route::post('usuarios/{user:hash_id}/resend-invite', [UsersController::class, 'resendInvite'])
             ->name('usuarios.resend-invite');
+
+        Route::get('workspace', [WorkspaceController::class, 'edit'])
+            ->middleware('tenantRole:admin')
+            ->name('workspace.edit');
+
+        Route::put('workspace', [WorkspaceController::class, 'update'])
+            ->middleware('tenantRole:admin')
+            ->name('workspace.update');
     });

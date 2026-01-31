@@ -29,6 +29,9 @@ return new class extends Migration
             $table->string('status')->default('draft')->index();
             $table->boolean('is_public')->default(false)->index();
             $table->unsignedInteger('capacity')->nullable();
+            $table->string('main_photo_path')->nullable();
+            $table->string('main_photo_medium_path')->nullable();
+            $table->string('main_photo_thumb_path')->nullable();
             $table->timestamps();
 
             $table->unique(['tenant_id', 'slug']);

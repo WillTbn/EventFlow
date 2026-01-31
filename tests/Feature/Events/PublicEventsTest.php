@@ -52,7 +52,7 @@ class PublicEventsTest extends TestCase
 
         $this->withTenantContext($tenant)
             ->get(route('eventos.show', ['tenantSlug' => $tenant->slug, 'event' => $event->hash_id]))
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_public_show_renders_published_event()

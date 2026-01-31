@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Public\EventsController;
+use App\Http\Controllers\Public\WorkspaceController;
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -8,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('t/{tenantSlug}')
     ->group(function () {
         Route::middleware(['setCurrentTenant'])->group(function () {
+            Route::get('/', [WorkspaceController::class, 'show'])->name('workspace.show');
             Route::get('eventos', [EventsController::class, 'index'])->name('eventos.index');
             Route::get('eventos/{event:hash_id}', [EventsController::class, 'show'])->name('eventos.show');
         });

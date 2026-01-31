@@ -18,6 +18,9 @@ return new class extends Migration
             $table->enum('plan', ['free', 'plus', 'enterprise'])->default('free');
             $table->enum('status', ['active', 'suspended', 'canceled'])->default('active');
             $table->timestamp('trial_ends_at')->nullable();
+            $table->string('logo_path')->nullable();
+            $table->string('logo_medium_path')->nullable();
+            $table->string('logo_thumb_path')->nullable();
             $table->timestamps();
         });
     }

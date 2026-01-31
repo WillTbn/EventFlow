@@ -2,8 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 
 import { useTenantUrl } from '@/composables/useTenantUrl';
-import { show } from '@/routes/eventos';
-import { show as workspaceShow } from '@/routes/workspace';
+import { index as eventsIndex, show as eventsShow } from '@/routes/eventos';
 
 interface WorkspacePayload {
     name: string | null;
@@ -43,17 +42,17 @@ const { withTenantUrl } = useTenantUrl();
 </script>
 
 <template>
-    <Head title="Eventos" />
+    <Head :title="workspace.name ? `Workspace ${workspace.name}` : 'Workspace'" />
 
-    <div class="landing-page space-y-10">
+    <div class="landing-page space-y-12">
         <section
-            class="relative overflow-hidden rounded-3xl border bg-gradient-to-b from-slate-50 via-white to-slate-100 px-6 py-10 shadow-sm sm:px-10 lg:px-16"
+            class="relative overflow-hidden rounded-3xl border bg-gradient-to-b from-slate-50 via-white to-slate-100 px-6 py-12 shadow-sm sm:px-10 lg:px-16"
         >
-            <div class="absolute -left-16 -top-16 h-44 w-44 rounded-full bg-amber-200/40 blur-3xl"></div>
-            <div class="absolute -right-16 top-8 h-52 w-52 rounded-full bg-emerald-200/40 blur-3xl"></div>
+            <div class="absolute -left-20 -top-16 h-52 w-52 rounded-full bg-amber-200/40 blur-3xl"></div>
+            <div class="absolute -right-16 top-8 h-60 w-60 rounded-full bg-emerald-200/40 blur-3xl"></div>
 
-            <div class="relative space-y-6">
-                <div class="flex flex-wrap items-center justify-between gap-6">
+            <div class="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+                <div class="space-y-4">
                     <div class="flex items-center gap-4">
                         <div
                             class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white"
@@ -69,28 +68,53 @@ const { withTenantUrl } = useTenantUrl();
                             </span>
                         </div>
                         <div>
-                            <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Workspace</p>
+                            <p class="text-xs uppercase tracking-[0.3em] text-slate-400">
+                                Workspace
+                            </p>
                             <h1 class="text-2xl font-semibold text-slate-900 sm:text-3xl">
-                                {{ workspace.name || 'Eventos publicos' }}
+                                {{ workspace.name || 'Workspace' }}
                             </h1>
                         </div>
                     </div>
-                    <Link
-                        class="rounded-full border border-slate-300 px-5 py-2 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:border-slate-400"
-                        :href="withTenantUrl(workspaceShow())"
-                    >
-                        Voltar ao workspace
-                    </Link>
+                    <p class="max-w-2xl text-sm text-slate-600 sm:text-base">
+                        Conheca os eventos publicos e novidades desta organizacao. Aqui voce encontra
+                        as experiencias abertas, detalhes e atualizacoes mais recentes.
+                    </p>
                 </div>
 
-                <p class="max-w-2xl text-sm text-slate-600 sm:text-base">
-                    Explore eventos publicados e compartilhe as experiencias com o seu publico.
-                    Apenas eventos confirmados aparecem nesta lista.
-                </p>
+                <div class="flex flex-wrap gap-3">
+                    <Link
+                        :href="withTenantUrl(eventsIndex())"
+                        class="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
+                    >
+                        Ver todos os eventos
+                    </Link>
+                    <Link
+                        :href="withTenantUrl(eventsIndex())"
+                        class="rounded-full border border-slate-300 px-5 py-2 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:border-slate-400"
+                    >
+                        Programacao completa
+                    </Link>
+                </div>
             </div>
         </section>
 
         <section class="space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-xl font-semibold text-slate-900">Eventos em destaque</h2>
+                    <p class="text-sm text-slate-600">
+                        Apenas eventos publicados e abertos ao publico.
+                    </p>
+                </div>
+                <Link
+                    :href="withTenantUrl(eventsIndex())"
+                    class="text-sm font-medium text-slate-700 transition hover:text-slate-900"
+                >
+                    Ver lista completa
+                </Link>
+            </div>
+
             <div v-if="events.data.length" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <article
                     v-for="event in events.data"
@@ -113,9 +137,9 @@ const { withTenantUrl } = useTenantUrl();
                     </div>
                     <div class="space-y-3 p-5">
                         <div class="space-y-1">
-                            <h2 class="text-base font-semibold text-slate-900">
+                            <h3 class="text-base font-semibold text-slate-900">
                                 {{ event.title }}
-                            </h2>
+                            </h3>
                             <p class="line-clamp-3 text-sm text-slate-600">
                                 {{ event.description || 'Sem descricao cadastrada.' }}
                             </p>
@@ -130,7 +154,7 @@ const { withTenantUrl } = useTenantUrl();
                         </div>
                         <Link
                             class="inline-flex items-center gap-2 text-sm font-medium text-slate-700 transition group-hover:text-slate-900"
-                            :href="withTenantUrl(show({ event: event.hash_id }))"
+                            :href="withTenantUrl(eventsShow({ event: event.hash_id }))"
                         >
                             Ver detalhes
                             <span aria-hidden="true">→</span>
@@ -159,7 +183,6 @@ const { withTenantUrl } = useTenantUrl();
                     <span v-html="link.label"></span>
                 </Link>
             </div>
-
         </section>
     </div>
 </template>
