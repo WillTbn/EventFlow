@@ -26,5 +26,5 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
-confi.toml
+/.codex/config.toml
 

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { onBeforeUnmount, ref } from 'vue';
 
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useTenantUrl } from '@/composables/useTenantUrl';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -24,6 +24,10 @@ defineProps<{
 
 const { withTenantUrl } = useTenantUrl();
 
+const mainPhotoInput = ref<HTMLInputElement | null>(null);
+const mainPhotoPreviewUrl = ref<string | null>(null);
+const mainPhotoFileName = ref<string | null>(null);
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Eventos',
@@ -34,6 +38,43 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: withTenantUrl(create()),
     },
 ];
+
+const handleMainPhotoChange = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+
+    if (mainPhotoPreviewUrl.value) {
+        URL.revokeObjectURL(mainPhotoPreviewUrl.value);
+        mainPhotoPreviewUrl.value = null;
+    }
+
+    if (!file) {
+        mainPhotoFileName.value = null;
+        return;
+    }
+
+    mainPhotoPreviewUrl.value = URL.createObjectURL(file);
+    mainPhotoFileName.value = file.name;
+};
+
+const clearMainPhoto = () => {
+    if (mainPhotoPreviewUrl.value) {
+        URL.revokeObjectURL(mainPhotoPreviewUrl.value);
+    }
+
+    if (mainPhotoInput.value) {
+        mainPhotoInput.value.value = '';
+    }
+
+    mainPhotoPreviewUrl.value = null;
+    mainPhotoFileName.value = null;
+};
+
+onBeforeUnmount(() => {
+    if (mainPhotoPreviewUrl.value) {
+        URL.revokeObjectURL(mainPhotoPreviewUrl.value);
+    }
+});
 </script>
 
 <template>
@@ -122,16 +163,68 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <InputError :message="errors.capacity" />
                     </div>
 
-                    <div class="flex items-center gap-4">
-                        <Switch id="is_public" name="is_public" value="1" />
-                        <Label for="is_public">Evento publico</Label>
+                    <div class="grid gap-2">
+                        <Label>Visibilidade</Label>
+                        <div class="flex flex-wrap items-center gap-4">
+                            <label class="inline-flex items-center gap-2">
+                                <input
+                                    class="h-4 w-4 rounded-full border border-input text-primary"
+                                    type="radio"
+                                    name="is_public"
+                                    value="0"
+                                    checked
+                                />
+                                <span class="text-sm">Nao publico</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2">
+                                <input
+                                    class="h-4 w-4 rounded-full border border-input text-primary"
+                                    type="radio"
+                                    name="is_public"
+                                    value="1"
+                                />
+                                <span class="text-sm">Publico</span>
+                            </label>
+                        </div>
                         <InputError :message="errors.is_public" />
                     </div>
 
-                    <div class="grid gap-2">
+                    <div class="grid gap-3">
                         <Label for="main_photo">Foto principal</Label>
-                        <Input id="main_photo" name="main_photo" type="file" />
+                        <Input
+                            id="main_photo"
+                            ref="mainPhotoInput"
+                            name="main_photo"
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            @change="handleMainPhotoChange"
+                        />
                         <InputError :message="errors.main_photo" />
+                        <div v-if="mainPhotoPreviewUrl" class="flex flex-wrap items-center gap-4">
+                            <div
+                                class="flex h-24 w-24 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted"
+                            >
+                                <img
+                                    :src="mainPhotoPreviewUrl"
+                                    :alt="mainPhotoFileName || 'Preview da foto principal'"
+                                    class="h-full w-full object-cover"
+                                />
+                            </div>
+                            <div class="space-y-2 text-sm text-muted-foreground">
+                                <p class="font-medium text-foreground">Preview selecionado</p>
+                                <p v-if="mainPhotoFileName">{{ mainPhotoFileName }}</p>
+                                <button
+                                    type="button"
+                                    class="text-xs font-medium text-rose-600 transition hover:text-rose-700"
+                                    @click="clearMainPhoto"
+                                >
+                                    Remover imagem
+                                </button>
+                            </div>
+                        </div>
+                        <p v-else class="text-xs text-muted-foreground">
+                            Selecione uma imagem JPG, PNG ou WebP ate 5MB.
+                        </p>
                     </div>
 
                     <div class="flex items-center gap-4">

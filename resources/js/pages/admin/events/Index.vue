@@ -4,6 +4,16 @@ import { Form, Head, Link } from '@inertiajs/vue3';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { useTenantUrl } from '@/composables/useTenantUrl';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { create, destroy, edit, index } from '@/routes/admin/eventos';
@@ -132,24 +142,56 @@ const breadcrumbs: BreadcrumbItem[] = [
                                                 Editar
                                             </Link>
                                         </Button>
-                                        <Form
-                                            :action="withTenantUrl(destroy({ event: event.hash_id }).url)"
-                                            method="delete"
-                                            v-slot="{ processing, errors }"
-                                        >
-                                            <Button
-                                                size="sm"
-                                                variant="destructive"
-                                                :disabled="processing"
-                                            >
-                                                Excluir
-                                            </Button>
-                                            <InputError
-                                                v-if="errors.event"
-                                                class="mt-2"
-                                                :message="errors.event"
-                                            />
-                                        </Form>
+                                        <Dialog>
+                                            <DialogTrigger as-child>
+                                                <Button size="sm" variant="destructive">
+                                                    Excluir
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent>
+                                                <Form
+                                                    :action="
+                                                        withTenantUrl(
+                                                            destroy({ event: event.hash_id }).url,
+                                                        )
+                                                    "
+                                                    method="delete"
+                                                    v-slot="{ processing, errors }"
+                                                    class="space-y-4"
+                                                >
+                                                    <DialogHeader class="space-y-2">
+                                                        <DialogTitle>
+                                                            Confirmar exclusao do evento?
+                                                        </DialogTitle>
+                                                        <DialogDescription>
+                                                            Esta acao nao pode ser desfeita. O
+                                                            evento "{{ event.title }}" sera
+                                                            removido permanentemente.
+                                                        </DialogDescription>
+                                                    </DialogHeader>
+
+                                                    <InputError
+                                                        v-if="errors.event"
+                                                        :message="errors.event"
+                                                    />
+
+                                                    <DialogFooter class="gap-2">
+                                                        <DialogClose as-child>
+                                                            <Button variant="secondary">
+                                                                Cancelar
+                                                            </Button>
+                                                        </DialogClose>
+                                                        <Button
+                                                            type="submit"
+                                                            variant="destructive"
+                                                            :disabled="processing"
+                                                        >
+                                                            Confirmar exclusao
+                                                        </Button>
+                                                    </DialogFooter>
+                                                </Form>
+                                            </DialogContent>
+                                        </Dialog>
                                     </div>
                                 </td>
                             </tr>

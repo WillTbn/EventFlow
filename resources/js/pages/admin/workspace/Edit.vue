@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, Link } from '@inertiajs/vue3';
+import { onBeforeUnmount, ref } from 'vue';
 
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -23,12 +24,53 @@ defineProps<{
 
 const { withTenantUrl, dashboardUrl } = useTenantUrl();
 
+const logoInput = ref<HTMLInputElement | null>(null);
+const logoPreviewUrl = ref<string | null>(null);
+const logoFileName = ref<string | null>(null);
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Workspace',
         href: withTenantUrl(edit()),
     },
 ];
+
+const handleLogoChange = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+
+    if (logoPreviewUrl.value) {
+        URL.revokeObjectURL(logoPreviewUrl.value);
+        logoPreviewUrl.value = null;
+    }
+
+    if (!file) {
+        logoFileName.value = null;
+        return;
+    }
+
+    logoPreviewUrl.value = URL.createObjectURL(file);
+    logoFileName.value = file.name;
+};
+
+const clearLogo = () => {
+    if (logoPreviewUrl.value) {
+        URL.revokeObjectURL(logoPreviewUrl.value);
+    }
+
+    if (logoInput.value) {
+        logoInput.value.value = '';
+    }
+
+    logoPreviewUrl.value = null;
+    logoFileName.value = null;
+};
+
+onBeforeUnmount(() => {
+    if (logoPreviewUrl.value) {
+        URL.revokeObjectURL(logoPreviewUrl.value);
+    }
+});
 </script>
 
 <template>
@@ -43,6 +85,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                 <Form
                     :action="withTenantUrl(update().url)"
                     method="put"
+                    multipart
                     v-slot="{ errors, processing }"
                     class="space-y-6"
                 >
@@ -65,18 +108,38 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 class="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted"
                             >
                                 <img
-                                    v-if="workspace.logo_url"
-                                    :src="workspace.logo_url"
+                                    v-if="logoPreviewUrl || workspace.logo_url"
+                                    :src="logoPreviewUrl || workspace.logo_url || ''"
                                     alt="Logo do workspace"
                                     class="h-full w-full object-contain"
                                 />
                                 <span v-else class="text-xs text-muted-foreground">Sem logo</span>
                             </div>
                             <div class="flex-1">
-                                <Input id="logo" name="logo" type="file" />
+                                <Input
+                                    id="logo"
+                                    ref="logoInput"
+                                    name="logo"
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp"
+                                    @change="handleLogoChange"
+                                />
                                 <InputError :message="errors.logo" />
+                                <div v-if="logoPreviewUrl" class="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
+                                    <span v-if="logoFileName">{{ logoFileName }}</span>
+                                    <button
+                                        type="button"
+                                        class="text-xs font-medium text-rose-600 transition hover:text-rose-700"
+                                        @click="clearLogo"
+                                    >
+                                        Remover preview
+                                    </button>
+                                </div>
                             </div>
                         </div>
+                        <p class="text-xs text-muted-foreground">
+                            Envie uma imagem JPG, PNG ou WebP ate 5MB.
+                        </p>
                     </div>
 
                     <div class="flex items-center gap-4">

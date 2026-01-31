@@ -22,7 +22,7 @@ class UpdateEventRequest extends FormRequest
             'starts_at' => ['required', 'date'],
             'ends_at' => ['required', 'date', 'after:starts_at'],
             'status' => ['required', Rule::in(['draft', 'published', 'canceled'])],
-            'is_public' => ['required', 'boolean'],
+            'is_public' => ['boolean'],
             'capacity' => ['nullable', 'integer', 'min:1'],
         ];
     }
