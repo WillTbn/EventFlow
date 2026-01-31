@@ -8,7 +8,7 @@ use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-
+use Vinkla\Hashids\Facades\Hashids;
 class TenantSeeder extends Seeder
 {
     /**
@@ -39,6 +39,7 @@ class TenantSeeder extends Seeder
                 'name' => $adminName,
                 'password' => Hash::make($adminPassword),
                 'email_verified_at' => now(),
+                'hash_id' => Hashids::encode(now()->timestamp)
             ]
         );
 
