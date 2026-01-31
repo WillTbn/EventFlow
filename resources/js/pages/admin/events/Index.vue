@@ -11,6 +11,7 @@ import { type BreadcrumbItem } from '@/types';
 
 interface EventListItem {
     id: number;
+    hash_id: string;
     title: string;
     status: string;
     is_public: boolean;
@@ -126,13 +127,13 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     <div class="flex items-center justify-end gap-2">
                                         <Button size="sm" variant="outline" as-child>
                                             <Link
-                                                :href="withTenantUrl(edit({ event: event.id }))"
+                                                :href="withTenantUrl(edit({ event: event.hash_id }))"
                                             >
                                                 Editar
                                             </Link>
                                         </Button>
                                         <Form
-                                            :action="withTenantUrl(destroy({ event: event.id }).url)"
+                                            :action="withTenantUrl(destroy({ event: event.hash_id }).url)"
                                             method="delete"
                                             v-slot="{ processing, errors }"
                                         >

@@ -48,9 +48,10 @@ class PublicEventsTest extends TestCase
         $event = Event::factory()->create([
             'tenant_id' => $tenant->id,
         ]);
+        $event->refresh();
 
         $this->withTenantContext($tenant)
-            ->get(route('eventos.show', ['tenantSlug' => $tenant->slug, 'event' => $event->slug]))
+            ->get(route('eventos.show', ['tenantSlug' => $tenant->slug, 'event' => $event->hash_id]))
             ->assertForbidden();
     }
 
@@ -60,13 +61,37 @@ class PublicEventsTest extends TestCase
         $event = Event::factory()->published()->public()->create([
             'tenant_id' => $tenant->id,
         ]);
+        $event->refresh();
 
         $this->withTenantContext($tenant)
-            ->get(route('eventos.show', ['tenantSlug' => $tenant->slug, 'event' => $event->slug]))
+            ->get(route('eventos.show', ['tenantSlug' => $tenant->slug, 'event' => $event->hash_id]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('public/events/Show')
                 ->where('event.id', $event->id)
             );
+    }
+
+    public function test_public_show_returns_404_for_wrong_tenant(): void
+    {
+        $tenantA = $this->createTenant();
+        $tenantB = $this->createTenant();
+        $event = Event::factory()->published()->public()->create([
+            'tenant_id' => $tenantA->id,
+        ]);
+        $event->refresh();
+
+        $this->withTenantContext($tenantB)
+            ->get(route('eventos.show', ['tenantSlug' => $tenantB->slug, 'event' => $event->hash_id]))
+            ->assertNotFound();
+    }
+
+    public function test_public_show_returns_404_for_invalid_hash(): void
+    {
+        $tenant = $this->createTenant();
+
+        $this->withTenantContext($tenant)
+            ->get(route('eventos.show', ['tenantSlug' => $tenant->slug, 'event' => 'invalid-hash']))
+            ->assertNotFound();
     }
 }

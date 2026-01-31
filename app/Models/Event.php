@@ -3,11 +3,14 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use App\Observers\EventObserver;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+#[ObservedBy([EventObserver::class])]
 class Event extends Model
 {
     /** @use HasFactory<\Database\Factories\EventFactory> */
@@ -33,6 +36,14 @@ class Event extends Model
         'main_photo_medium_path',
         'main_photo_thumb_path',
     ];
+
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'hash_id';
+    }
 
     /**
      * Get the user that created the event.

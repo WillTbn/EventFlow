@@ -16,6 +16,7 @@ import { type BreadcrumbItem } from '@/types';
 
 interface EventPayload {
     id: number;
+    hash_id: string;
     title: string;
     description: string | null;
     location: string | null;
@@ -47,7 +48,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
     },
     {
         title: 'Editar evento',
-        href: withTenantUrl(edit({ event: props.event.id })),
+        href: withTenantUrl(edit({ event: props.event.hash_id })),
     },
 ]);
 </script>
@@ -62,7 +63,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
             </CardHeader>
             <CardContent>
                 <Form
-                    :action="withTenantUrl(update({ event: event.id }).url)"
+                    :action="withTenantUrl(update({ event: event.hash_id }).url)"
                     method="put"
                     v-slot="{ errors, processing }"
                     class="space-y-6"

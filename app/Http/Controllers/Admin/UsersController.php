@@ -12,6 +12,7 @@ use App\Services\TenantContext;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -31,10 +32,11 @@ class UsersController extends Controller
     {
         $tenant = $this->tenantContext->get();
         $currentRole = $request->user()?->tenantRole($tenant);
-
+        // $userLogged = Auth()->user();
         $query = TenantUser::query()
             ->where('tenant_id', $tenant?->id)
             ->where('status', 'active')
+            ->whereNot('id', $request->user()->id)
             ->with('user')
             ->orderBy(
                 User::select('name')->whereColumn('users.id', 'tenant_users.user_id')
@@ -49,6 +51,7 @@ class UsersController extends Controller
             ->withQueryString()
             ->through(fn (TenantUser $membership) => [
                 'id' => $membership->user?->id,
+                'hash_id' => $membership->user?->hash_id,
                 'name' => $membership->user?->name,
                 'email' => $membership->user?->email,
                 'role' => $membership->role,
@@ -89,17 +92,17 @@ class UsersController extends Controller
     /**
      * Show the form for editing the specified user.
      */
-    public function edit(Request $request, User $user): Response
+    public function edit(Request $request,string $tenantSlug, User $user): Response
     {
         $tenant = $this->tenantContext->get();
         $membership = TenantUser::query()
             ->where('tenant_id', $tenant?->id)
             ->where('user_id', $user->id)
             ->firstOrFail();
-
         return Inertia::render('admin/users/Edit', [
             'user' => [
                 'id' => $user->id,
+                'hash_id' => $user->hash_id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $membership->role,
@@ -111,7 +114,7 @@ class UsersController extends Controller
     /**
      * Update the specified user in storage.
      */
-    public function update(UpdateUserRequest $request, User $user): RedirectResponse
+    public function update(UpdateUserRequest $request, string $tenantSlug, User $user): RedirectResponse
     {
         $tenant = $this->tenantContext->get();
         $data = $request->validated();
@@ -142,7 +145,7 @@ class UsersController extends Controller
     /**
      * Remove the specified user from storage.
      */
-    public function destroy(User $user): RedirectResponse
+    public function destroy(string $tenantSlug, User $user): RedirectResponse
     {
         $tenant = $this->tenantContext->get();
 

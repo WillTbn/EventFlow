@@ -79,6 +79,27 @@ class AdminEventsTest extends TestCase
             );
     }
 
+    public function test_event_hash_id_is_generated_on_create(): void
+    {
+        $tenant = $this->createTenant();
+        $user = User::factory()->create();
+
+        $this->attachUserToTenant($user, $tenant, 'admin');
+
+        $event = Event::factory()->create([
+            'tenant_id' => $tenant->id,
+            'created_by' => $user->id,
+        ]);
+
+        $event->refresh();
+
+        $this->assertNotNull($event->hash_id);
+        $this->assertDatabaseHas('events', [
+            'id' => $event->id,
+            'hash_id' => $event->hash_id,
+        ]);
+    }
+
     public function test_admin_can_create_event()
     {
         $tenant = $this->createTenant();

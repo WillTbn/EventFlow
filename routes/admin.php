@@ -16,15 +16,17 @@ Route::middleware(['auth', 'verified', 'setCurrentTenant', 'tenantRole:admin,mod
 
         Route::resource('eventos', EventsController::class)
             ->parameters(['eventos' => 'event'])
+            ->scoped(['event' => 'hash_id'])
             ->except(['show']);
 
-        Route::post('eventos/{event}/foto-principal', [EventPhotosController::class, 'updateMain'])
+        Route::post('eventos/{event:hash_id}/foto-principal', [EventPhotosController::class, 'updateMain'])
             ->name('eventos.foto-principal');
 
-        Route::post('eventos/{event}/fotos', [EventPhotosController::class, 'store'])
+        Route::post('eventos/{event:hash_id}/fotos', [EventPhotosController::class, 'store'])
             ->name('eventos.fotos');
 
         Route::resource('usuarios', UsersController::class)
             ->parameters(['usuarios' => 'user'])
+            ->scoped(['user' => 'hash_id'])
             ->except(['show']);
     });

@@ -175,4 +175,37 @@ class AdminUsersTest extends TestCase
         Notification::assertSentTo($existingUser, SetPasswordNotification::class);
         $response->assertRedirect(route('admin.usuarios.edit', ['tenantSlug' => $tenant->slug, 'user' => $existingUser]));
     }
+
+    public function test_admin_cannot_access_user_from_other_tenant(): void
+    {
+        $tenantA = $this->createTenant();
+        $tenantB = $this->createTenant();
+        $admin = User::factory()->create();
+        $outsider = User::factory()->create();
+
+        $this->attachUserToTenant($admin, $tenantA, 'admin');
+        $this->attachUserToTenant($outsider, $tenantB, 'member');
+
+        $this->actingAsTenant($admin, $tenantA, 'admin')
+            ->get(route('admin.usuarios.edit', [
+                'tenantSlug' => $tenantA->slug,
+                'user' => $outsider->hash_id,
+            ]))
+            ->assertNotFound();
+    }
+
+    public function test_admin_user_route_returns_404_for_invalid_hash(): void
+    {
+        $tenant = $this->createTenant();
+        $admin = User::factory()->create();
+
+        $this->attachUserToTenant($admin, $tenant, 'admin');
+
+        $this->actingAsTenant($admin, $tenant, 'admin')
+            ->get(route('admin.usuarios.edit', [
+                'tenantSlug' => $tenant->slug,
+                'user' => 'invalid-hash',
+            ]))
+            ->assertNotFound();
+    }
 }

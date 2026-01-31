@@ -10,6 +10,7 @@ import { type BreadcrumbItem } from '@/types';
 
 interface UserListItem {
     id: number;
+    hash_id: string;
     name: string;
     email: string;
     role: string | null;
@@ -92,8 +93,8 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     {{ user.role }}
                                 </td>
                                 <td class="px-3 py-2 text-right">
-                                    <Button size="sm" variant="outline" as-child>
-                                        <Link :href="withTenantUrl(edit({ user: user.id }))">
+                                        <Button size="sm" variant="outline" as-child>
+                                        <Link :href="withTenantUrl(edit({ user: user.hash_id }))">
                                             Editar
                                         </Link>
                                     </Button>

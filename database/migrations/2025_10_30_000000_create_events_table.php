@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('events', function (Blueprint $table) {
             $table->id();
+            $table->string('hash_id')->unique();
             $table->foreignId('tenant_id')
                 ->constrained('tenants')
                 ->cascadeOnDelete();

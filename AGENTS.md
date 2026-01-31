@@ -3,7 +3,7 @@
 
 # Laravel Boost Guidelines — EventFlow (Fact Sphere)
 
-The Laravel Boost guidelines are specifically curated by maintainers for this application. Follow them to build safely and consistently.
+The Laravel Boost guidelines are specifically curated by Laravel maintainers for this application. These guidelines should be followed closely to enhance the user's satisfaction building Laravel applications.
 
 ## Atalhos: docs/ (navegacao rapida)
 
@@ -15,20 +15,23 @@ The Laravel Boost guidelines are specifically curated by maintainers for this ap
 - Planos e quotas
 
 ### Base e visao geral
-- _PROJECT_GUIDE.md
+- docs/_PROJECT_GUIDE.md
 - docs/visao-geral.md
 
 ### Multi-tenant e arquitetura
-- _PROJECT_GUIDE.md
+-docs/ _PROJECT_GUIDE.md
 
 ### Frontend (Inertia + Vue)
-- _PROJECT_GUIDE.md
+- docs/skills/inertia-vue-development/SKILL.md
 
 ### PWA e admin
-- _PROJECT_GUIDE.md
+- docs/skills/inertia-vue-development/SKILL.md
+- docs/skills/wayfinder-development/SKILL.md
+- docs/skills/tailwindcss-development/SKILL.md
 
 ### Planos e quotas
-- _PROJECT_GUIDE.md
+- docs/_PROJECT_GUIDE.md
+- docs/_DONE_CHECKLIST.md
 
 ## Foundational Context
 This application is a Laravel application and its main Laravel ecosystem packages & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.

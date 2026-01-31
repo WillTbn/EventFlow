@@ -82,6 +82,19 @@ import { store } from '@/routes/register';
                     />
                     <InputError :message="errors.password_confirmation" />
                 </div>
+                <div class="grid gap-2">
+                    <Label for="workspace">Nome para seu Workspace</Label>
+                    <Input
+                        id="workspace"
+                        type="text"
+                        required
+                        autofocus
+                        :tabindex="1"
+                        name="workspace"
+                        placeholder="Nome empresa, instituição, organização ..."
+                    />
+                    <InputError :message="errors.workspace" />
+                </div>
 
                 <Button
                     type="submit"

@@ -28,7 +28,7 @@ class EventsController extends Controller
                 'id' => $event->id,
                 'title' => $event->title,
                 'description' => $event->description,
-                'slug' => $event->slug,
+                'hash_id' => $event->hash_id,
                 'location' => $event->location,
                 'starts_at' => $event->starts_at?->format('Y-m-d H:i'),
                 'ends_at' => $event->ends_at?->format('Y-m-d H:i'),
@@ -63,4 +63,3 @@ class EventsController extends Controller
         ]);
     }
 }
-

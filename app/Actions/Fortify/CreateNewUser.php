@@ -25,6 +25,7 @@ class CreateNewUser implements CreatesNewUsers
         Validator::make($input, [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
+            'workspace' => ['required', 'string', 'max:50'],
         ])->validate();
 
         $user = User::create([
@@ -33,7 +34,7 @@ class CreateNewUser implements CreatesNewUsers
             'password' => $input['password'],
         ]);
 
-        $workspaceName = sprintf('%s Workspace', $user->name);
+        $workspaceName = $input['workspace'];
         $baseSlug = Str::slug($workspaceName);
         $slug = $baseSlug;
         $counter = 1;

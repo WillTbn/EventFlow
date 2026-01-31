@@ -13,7 +13,7 @@ import { edit, index, update } from '@/routes/admin/usuarios';
 import { type BreadcrumbItem } from '@/types';
 
 interface UserPayload {
-    id: number;
+    hash_id: string;
     name: string;
     email: string;
     role: string | null;
@@ -33,7 +33,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
     },
     {
         title: 'Editar usuario',
-        href: withTenantUrl(edit({ user: props.user.id })),
+        href: withTenantUrl(edit({ user: props.user.hash_id })),
     },
 ]);
 </script>
@@ -48,7 +48,7 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
             </CardHeader>
             <CardContent>
                 <Form
-                    :action="withTenantUrl(update({ user: user.id }).url)"
+                    :action="withTenantUrl(update({ user: user.hash_id }).url)"
                     method="put"
                     v-slot="{ errors, processing }"
                     class="space-y-6"
@@ -68,22 +68,6 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => [
                             :default-value="user.email"
                         />
                         <InputError :message="errors.email" />
-                    </div>
-
-                    <div class="grid gap-2">
-                        <Label for="password">Senha</Label>
-                        <Input id="password" name="password" type="password" />
-                        <InputError :message="errors.password" />
-                    </div>
-
-                    <div class="grid gap-2">
-                        <Label for="password_confirmation">Confirmar senha</Label>
-                        <Input
-                            id="password_confirmation"
-                            name="password_confirmation"
-                            type="password"
-                        />
-                        <InputError :message="errors.password_confirmation" />
                     </div>
 
                     <div class="grid gap-2">

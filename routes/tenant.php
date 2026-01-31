@@ -9,7 +9,7 @@ Route::prefix('t/{tenantSlug}')
     ->group(function () {
         Route::middleware(['setCurrentTenant'])->group(function () {
             Route::get('eventos', [EventsController::class, 'index'])->name('eventos.index');
-            Route::get('eventos/{event:slug}', [EventsController::class, 'show'])->name('eventos.show');
+            Route::get('eventos/{event:hash_id}', [EventsController::class, 'show'])->name('eventos.show');
         });
 
         Route::middleware(['auth', 'setCurrentTenant'])->get('ping', function (Request $request) {

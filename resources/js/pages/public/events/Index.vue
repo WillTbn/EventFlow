@@ -9,7 +9,7 @@ interface EventListItem {
     id: number;
     title: string;
     description: string | null;
-    slug: string;
+    hash_id: string;
     location: string | null;
     starts_at: string | null;
     ends_at: string | null;
@@ -63,7 +63,7 @@ const { withTenantUrl } = useTenantUrl();
                     </div>
                     <Link
                         class="text-sm text-primary"
-                        :href="withTenantUrl(show({ event: event.slug }))"
+                        :href="withTenantUrl(show({ event: event.hash_id }))"
                     >
                         Ver detalhes
                     </Link>

@@ -45,6 +45,7 @@ class EventsController extends Controller
             ->withQueryString()
             ->through(fn (Event $event) => [
                 'id' => $event->id,
+                'hash_id' => $event->hash_id,
                 'title' => $event->title,
                 'status' => $event->status,
                 'is_public' => $event->is_public,
@@ -109,6 +110,7 @@ class EventsController extends Controller
         return Inertia::render('admin/events/Edit', [
             'event' => [
                 'id' => $event->id,
+                'hash_id' => $event->hash_id,
                 'title' => $event->title,
                 'description' => $event->description,
                 'location' => $event->location,
@@ -175,5 +177,4 @@ class EventsController extends Controller
         ];
     }
 }
-
 
