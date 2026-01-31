@@ -16,6 +16,6 @@ class UserObserver
             return;
         }
 
-        $user->hash_id = Hashids::encode(now()->timestamp);
+        $user->hash_id = Hashids::encode(now()->timestamp, random_int(1, 999_999));
     }
 }

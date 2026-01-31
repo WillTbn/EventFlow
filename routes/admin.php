@@ -29,4 +29,7 @@ Route::middleware(['auth', 'verified', 'setCurrentTenant', 'tenantRole:admin,mod
             ->parameters(['usuarios' => 'user'])
             ->scoped(['user' => 'hash_id'])
             ->except(['show']);
+
+        Route::post('usuarios/{user:hash_id}/resend-invite', [UsersController::class, 'resendInvite'])
+            ->name('usuarios.resend-invite');
     });

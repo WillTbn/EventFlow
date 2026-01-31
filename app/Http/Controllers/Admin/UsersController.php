@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Actions\Users\CreateUserAndSendSetPasswordLink;
+use App\Actions\Users\SendSetPasswordLink;
 use App\Models\TenantUser;
 use App\Models\User;
 use App\Services\TenantContext;
@@ -99,6 +100,7 @@ class UsersController extends Controller
             ->where('tenant_id', $tenant?->id)
             ->where('user_id', $user->id)
             ->firstOrFail();
+
         return Inertia::render('admin/users/Edit', [
             'user' => [
                 'id' => $user->id,
@@ -106,6 +108,9 @@ class UsersController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $membership->role,
+                'access_started_at' => $user->email_verified_at
+                    ? $membership->created_at?->timezone(config('app.timezone'))->format('d/m/Y H:i')
+                    : null,
             ],
             'roles' => $this->availableRoles($request->user(), $tenant),
         ]);
@@ -156,6 +161,71 @@ class UsersController extends Controller
 
         return to_route('admin.usuarios.index', [
             'tenantSlug' => $tenant?->slug,
+        ]);
+    }
+
+    public function resendInvite(
+        Request $request,
+        string $tenantSlug,
+        User $user,
+        SendSetPasswordLink $sendSetPasswordLink
+    ): RedirectResponse {
+        $this->authorize('update', $user);
+
+        $tenant = $this->tenantContext->get();
+
+        TenantUser::query()
+            ->where('tenant_id', $tenant?->id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        if ($user->email_verified_at) {
+            logger()->info('Admin invite resend skipped (already verified).', [
+                'tenant_id' => $tenant?->id,
+                'actor_user_id' => $request->user()?->id,
+                'target_user_id' => $user->id,
+                'before' => [
+                    'email_verified_at' => $user->email_verified_at?->toDateTimeString(),
+                ],
+                'after' => [
+                    'email_verified_at' => $user->email_verified_at?->toDateTimeString(),
+                ],
+            ]);
+
+            return to_route('admin.usuarios.edit', [
+                'tenantSlug' => $tenant?->slug,
+                'user' => $user,
+            ]);
+        }
+
+        $before = [
+            'email_verified_at' => $user->email_verified_at?->toDateTimeString(),
+        ];
+
+        try {
+            $sendSetPasswordLink->handle($user, $tenant);
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            return to_route('admin.usuarios.edit', [
+                'tenantSlug' => $tenant?->slug,
+                'user' => $user,
+            ])->withErrors([
+                'invite' => $exception->errors()['email'][0] ?? 'Não foi possível reenviar o convite.',
+            ]);
+        }
+
+        logger()->info('Admin resent workspace invite email.', [
+            'tenant_id' => $tenant?->id,
+            'actor_user_id' => $request->user()?->id,
+            'target_user_id' => $user->id,
+            'before' => $before,
+            'after' => [
+                'email_verified_at' => $user->email_verified_at?->toDateTimeString(),
+            ],
+        ]);
+
+        return to_route('admin.usuarios.edit', [
+            'tenantSlug' => $tenant?->slug,
+            'user' => $user,
         ]);
     }
 

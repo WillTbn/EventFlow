@@ -13,7 +13,7 @@ class AdminUsersTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_can_view_all_users(): void
+    public function test_admin_can_view_all_other_users(): void
     {
         $tenant = $this->createTenant();
         $admin = User::factory()->create();
@@ -29,7 +29,7 @@ class AdminUsersTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('admin/users/Index')
-                ->has('users.data', 3)
+                ->has('users.data', 2)
             );
     }
 
@@ -207,5 +207,53 @@ class AdminUsersTest extends TestCase
                 'user' => 'invalid-hash',
             ]))
             ->assertNotFound();
+    }
+
+    public function test_admin_can_resend_invite_for_unverified_user(): void
+    {
+        Notification::fake();
+
+        $tenant = $this->createTenant();
+        $admin = User::factory()->create();
+        $member = User::factory()->unverified()->create();
+
+        $this->attachUserToTenant($admin, $tenant, 'admin');
+        $this->attachUserToTenant($member, $tenant, 'member');
+
+        $response = $this->actingAsTenant($admin, $tenant, 'admin')
+            ->post(route('admin.usuarios.resend-invite', [
+                'tenantSlug' => $tenant->slug,
+                'user' => $member->hash_id,
+            ]));
+
+        Notification::assertSentTo($member, SetPasswordNotification::class);
+        $response->assertRedirect(route('admin.usuarios.edit', [
+            'tenantSlug' => $tenant->slug,
+            'user' => $member->hash_id,
+        ]));
+    }
+
+    public function test_admin_cannot_resend_invite_for_verified_user(): void
+    {
+        Notification::fake();
+
+        $tenant = $this->createTenant();
+        $admin = User::factory()->create();
+        $member = User::factory()->create();
+
+        $this->attachUserToTenant($admin, $tenant, 'admin');
+        $this->attachUserToTenant($member, $tenant, 'member');
+
+        $response = $this->actingAsTenant($admin, $tenant, 'admin')
+            ->post(route('admin.usuarios.resend-invite', [
+                'tenantSlug' => $tenant->slug,
+                'user' => $member->hash_id,
+            ]));
+
+        Notification::assertNotSentTo($member, SetPasswordNotification::class);
+        $response->assertRedirect(route('admin.usuarios.edit', [
+            'tenantSlug' => $tenant->slug,
+            'user' => $member->hash_id,
+        ]));
     }
 }

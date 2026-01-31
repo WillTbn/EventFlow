@@ -51,6 +51,7 @@ This application is a Laravel application and its main Laravel ecosystem package
 - @laravel/vite-plugin-wayfinder (WAYFINDER_VITE) - v0.1.7
 - eslint (ESLINT) - v9.39.2
 - prettier (PRETTIER) - v3.8.0
+- vinkla/hashids 13.0
 
 ## Conventions
 - Follow existing code conventions. Check sibling files for structure, naming, and approach.
@@ -159,6 +160,13 @@ This application is a Laravel application and its main Laravel ecosystem package
 
 ### URL Generation
 - Prefer named routes and `route()`.
+
+## Routing & Public IDs (hash_id)
+- Entities exposed in URLs MUST use `hash_id` (not numeric `id`): Users and Events.
+- Routes must use implicit binding via `{model:hash_id}` (e.g. `t/{tenantSlug}/admin/usuarios/{user:hash_id}`).
+- Slugged entities keep using `{slug}` and do not require `hash_id`.
+- `hash_id` is immutable once created; never regenerate on update.
+- Full spec & examples live in: docs/_PROJECT_GUIDE.md (Public IDs / hash_id).
 
 ### Configuration
 - Use `config()`; never call `env()` outside config files.
