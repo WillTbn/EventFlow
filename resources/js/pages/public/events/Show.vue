@@ -30,7 +30,7 @@ interface EventPhotoPayload {
     thumb_url: string;
 }
 
-defineProps<{
+const props = defineProps<{
     workspace: WorkspacePayload;
     event: EventPayload;
     photos: EventPhotoPayload[];
@@ -42,17 +42,17 @@ const shareCopied = ref(false);
 const shareUrl = computed(() =>
     typeof window === 'undefined' ? '' : window.location.href,
 );
-const rawDescription = computed(() => event.description?.trim() || '');
+const rawDescription = computed(() => props.event.description?.trim() || '');
 const metaDescription = computed(() => {
-    const fallback = workspace.name
-        ? `Evento publico do workspace ${workspace.name}.`
+    const fallback = props.workspace.name
+        ? `Evento publico do workspace ${props.workspace.name}.`
         : 'Evento publico do workspace.';
     const base = rawDescription.value || fallback;
     return base.replace(/\s+/g, ' ').slice(0, 160);
 });
 
 const canShare = computed(
-    () => event.is_public && event.status === 'published',
+    () => props.event.is_public && props.event.status === 'published',
 );
 
 const shareLabel = computed(() =>
@@ -65,7 +65,7 @@ async function handleShare(): Promise<void> {
     }
 
     const payload = {
-        title: event.title,
+        title: props.event.title,
         text: metaDescription.value,
         url: shareUrl.value,
     };

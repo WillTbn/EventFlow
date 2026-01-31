@@ -45,7 +45,7 @@ const tutorialCta = computed(() => ({
 </script>
 
 <template>
-    <div class="landing-page space-y-20">
+    <div class="landing-page space-y-20  bg-white dark:bg-white dark:text-slate-900">
         <section class="relative overflow-hidden rounded-3xl border bg-gradient-to-b from-slate-50 via-white to-slate-100 px-6 py-14 shadow-sm sm:px-10 lg:px-16">
             <div class="absolute -left-24 -top-20 h-56 w-56 rounded-full bg-amber-200/40 blur-3xl"></div>
             <div class="absolute -right-24 top-8 h-64 w-64 rounded-full bg-emerald-200/40 blur-3xl"></div>
@@ -123,7 +123,8 @@ const tutorialCta = computed(() => ({
             </div>
         </section>
 
-        <section class="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center px-6  sm:px-10 lg:px-16">
+        <section class="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center px-6 sm:px-10 lg:px-16
+           bg-white text-slate-900 dark:bg-white dark:text-slate-900">
             <div class="space-y-5">
                 <p class="text-xs uppercase tracking-[0.3em] text-slate-400">Objetivo</p>
                 <h2 class="text-2xl font-semibold text-slate-900 sm:text-3xl">

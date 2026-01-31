@@ -45,14 +45,14 @@ const { withTenantUrl } = useTenantUrl();
 <template>
     <Head title="Eventos" />
 
-    <div class="landing-page space-y-10">
+    <div class="landing-page space-y-20  bg-white text-slate-900 dark:bg-white dark:text-slate-900">
         <section
             class="relative overflow-hidden rounded-3xl border bg-gradient-to-b from-slate-50 via-white to-slate-100 px-6 py-10 shadow-sm sm:px-10 lg:px-16"
         >
             <div class="absolute -left-16 -top-16 h-44 w-44 rounded-full bg-amber-200/40 blur-3xl"></div>
             <div class="absolute -right-16 top-8 h-52 w-52 rounded-full bg-emerald-200/40 blur-3xl"></div>
 
-            <div class="relative space-y-6">
+            <div class="relative space-y-6 ">
                 <div class="flex flex-wrap items-center justify-between gap-6">
                     <div class="flex items-center gap-4">
                         <div
@@ -90,8 +90,8 @@ const { withTenantUrl } = useTenantUrl();
             </div>
         </section>
 
-        <section class="space-y-6">
-            <div v-if="events.data.length" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <section class="space-y-20 container">
+            <div v-if="events.data.length" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 px-12">
                 <article
                     v-for="event in events.data"
                     :key="event.id"
