@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 
 import { useTenantUrl } from '@/composables/useTenantUrl';
 import { index } from '@/routes/eventos';
@@ -36,10 +37,77 @@ defineProps<{
 }>();
 
 const { withTenantUrl } = useTenantUrl();
+
+const shareCopied = ref(false);
+const shareUrl = computed(() =>
+    typeof window === 'undefined' ? '' : window.location.href,
+);
+const rawDescription = computed(() => event.description?.trim() || '');
+const metaDescription = computed(() => {
+    const fallback = workspace.name
+        ? `Evento publico do workspace ${workspace.name}.`
+        : 'Evento publico do workspace.';
+    const base = rawDescription.value || fallback;
+    return base.replace(/\s+/g, ' ').slice(0, 160);
+});
+
+const canShare = computed(
+    () => event.is_public && event.status === 'published',
+);
+
+const shareLabel = computed(() =>
+    shareCopied.value ? 'Link copiado' : 'Compartilhar',
+);
+
+async function handleShare(): Promise<void> {
+    if (!canShare.value || !shareUrl.value) {
+        return;
+    }
+
+    const payload = {
+        title: event.title,
+        text: metaDescription.value,
+        url: shareUrl.value,
+    };
+
+    if (navigator.share) {
+        await navigator.share(payload);
+        return;
+    }
+
+    if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareUrl.value);
+        shareCopied.value = true;
+        window.setTimeout(() => {
+            shareCopied.value = false;
+        }, 2200);
+    }
+}
 </script>
 
 <template>
-    <Head :title="event.title" />
+    <Head :title="event.title">
+        <meta head-key="description" name="description" :content="metaDescription" />
+        <meta head-key="og:title" property="og:title" :content="event.title" />
+        <meta head-key="og:description" property="og:description" :content="metaDescription" />
+        <meta head-key="og:type" property="og:type" content="article" />
+        <meta v-if="shareUrl" head-key="og:url" property="og:url" :content="shareUrl" />
+        <meta
+            v-if="event.cover_url"
+            head-key="og:image"
+            property="og:image"
+            :content="event.cover_url"
+        />
+        <meta head-key="twitter:card" name="twitter:card" content="summary_large_image" />
+        <meta head-key="twitter:title" name="twitter:title" :content="event.title" />
+        <meta head-key="twitter:description" name="twitter:description" :content="metaDescription" />
+        <meta
+            v-if="event.cover_url"
+            head-key="twitter:image"
+            name="twitter:image"
+            :content="event.cover_url"
+        />
+    </Head>
 
     <div class="landing-page space-y-10">
         <section
@@ -71,12 +139,23 @@ const { withTenantUrl } = useTenantUrl();
                             </p>
                         </div>
                     </div>
-                    <Link
-                        class="rounded-full border border-slate-300 px-5 py-2 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:border-slate-400"
-                        :href="withTenantUrl(index())"
-                    >
-                        Voltar para eventos
-                    </Link>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <Link
+                            class="rounded-full border border-slate-300 px-5 py-2 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:border-slate-400"
+                            :href="withTenantUrl(index())"
+                        >
+                            Voltar para eventos
+                        </Link>
+                        <button
+                            v-if="canShare"
+                            type="button"
+                            class="rounded-full border border-slate-300 px-5 py-2 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-70"
+                            :disabled="!shareUrl"
+                            @click="handleShare"
+                        >
+                            {{ shareLabel }}
+                        </button>
+                    </div>
                 </div>
 
                 <div>

@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\EventPhotosController;
 use App\Http\Controllers\Admin\EventsController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\WorkspaceController;
+use App\Models\Event;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -12,7 +13,31 @@ Route::middleware(['auth', 'verified', 'setCurrentTenant', 'tenantRole:admin,mod
     ->name('admin.')
     ->group(function () {
         Route::get('/', function () {
-            return Inertia::render('Dashboard');
+            $from = now()->startOfMonth()->subMonth();
+            $to = now()->endOfMonth()->addMonths(2);
+
+            $events = Event::query()
+                ->whereNotNull('starts_at')
+                ->whereBetween('starts_at', [$from, $to])
+                ->orderBy('starts_at')
+                ->take(120)
+                ->get()
+                ->map(fn (Event $event) => [
+                    'id' => $event->id,
+                    'hash_id' => $event->hash_id,
+                    'title' => $event->title,
+                    'description' => $event->description,
+                    'starts_at' => $event->starts_at?->format('Y-m-d H:i'),
+                    'ends_at' => $event->ends_at?->format('Y-m-d H:i'),
+                    'status' => $event->status,
+                    'is_public' => $event->is_public,
+                ])
+                ->values()
+                ->all();
+
+            return Inertia::render('Dashboard', [
+                'events' => $events,
+            ]);
         })->name('dashboard');
 
         Route::resource('eventos', EventsController::class)

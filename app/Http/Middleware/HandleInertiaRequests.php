@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Services\TenantContext;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -49,6 +50,12 @@ class HandleInertiaRequests extends Middleware
                 'id' => $tenant->id,
                 'name' => $tenant->name,
                 'slug' => $tenant->slug,
+                'logo_url' => $tenant->logo_medium_path
+                    ? Storage::disk('public')->url($tenant->logo_medium_path)
+                    : null,
+                'logo_thumb_url' => $tenant->logo_thumb_path
+                    ? Storage::disk('public')->url($tenant->logo_thumb_path)
+                    : null,
                 'plan' => $tenant->plan,
                 'status' => $tenant->status,
                 'trial_ends_at' => $tenant->trial_ends_at,
