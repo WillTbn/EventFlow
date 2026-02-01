@@ -12,6 +12,11 @@ Route::prefix('t/{tenantSlug}')
             Route::get('/', [WorkspaceController::class, 'show'])->name('workspace.show');
             Route::get('eventos', [EventsController::class, 'index'])->name('eventos.index');
             Route::get('eventos/{event:hash_id}', [EventsController::class, 'show'])->name('eventos.show');
+            Route::post('eventos/{event:hash_id}/rsvp', [EventsController::class, 'rsvp'])
+                ->middleware('throttle:rsvp')
+                ->name('eventos.rsvp');
+            Route::get('eventos/{event:hash_id}/calendar.ics', [EventsController::class, 'calendar'])
+                ->name('eventos.calendar');
         });
 
         Route::middleware(['auth', 'setCurrentTenant'])->get('ping', function (Request $request) {

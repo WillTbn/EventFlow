@@ -19,6 +19,7 @@ Route::middleware(['auth', 'verified', 'setCurrentTenant', 'tenantRole:admin,mod
             $events = Event::query()
                 ->whereNotNull('starts_at')
                 ->whereBetween('starts_at', [$from, $to])
+                ->withCount('rsvps')
                 ->orderBy('starts_at')
                 ->take(120)
                 ->get()
@@ -31,6 +32,8 @@ Route::middleware(['auth', 'verified', 'setCurrentTenant', 'tenantRole:admin,mod
                     'ends_at' => $event->ends_at?->format('Y-m-d H:i'),
                     'status' => $event->status,
                     'is_public' => $event->is_public,
+                    'capacity' => $event->capacity,
+                    'rsvp_count' => $event->rsvps_count,
                 ])
                 ->values()
                 ->all();

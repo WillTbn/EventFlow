@@ -62,6 +62,14 @@ class Event extends Model
     }
 
     /**
+     * Get the RSVPs for the event.
+     */
+    public function rsvps(): HasMany
+    {
+        return $this->hasMany(EventRsvp::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

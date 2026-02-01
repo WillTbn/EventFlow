@@ -17,11 +17,25 @@ interface EventPayload {
     ends_at: string | null;
     status: string;
     is_public: boolean;
+    capacity: number | null;
+    rsvp_count: number;
 }
 
 const props = defineProps<{
     events: EventPayload[];
 }>();
+
+const progressEvents = computed(() =>
+    props.events
+        .filter((event) => event.capacity && event.capacity > 0)
+        .map((event) => ({
+            ...event,
+            progress: Math.min(
+                100,
+                Math.round((event.rsvp_count / event.capacity!) * 100),
+            ),
+        })),
+);
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -138,7 +152,47 @@ watch(monthCursor, () => {
     <Head title="Dashboard" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-6 overflow-x-auto p-4">
+        <div class="flex flex-1 flex-col gap-6 p-4">
+            <section class="rounded-2xl border border-sidebar-border/70 bg-white p-6 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-slate-700">Capacidade x presenca</span>
+                    <span class="text-xs text-emerald-600">Eventos</span>
+                </div>
+                <div class="mt-4 max-h-64 space-y-3 overflow-y-auto pr-2">
+                    <div
+                        v-for="event in progressEvents"
+                        :key="event.id"
+                        class="rounded-2xl border border-slate-100 bg-slate-50 p-4"
+                    >
+                        <p class="text-xs uppercase tracking-wide text-slate-400">
+                            {{ event.rsvp_count }} confirmadas
+                            <span v-if="event.capacity"> • {{ event.capacity }} vagas</span>
+                        </p>
+                        <div class="mt-2 flex items-center justify-between">
+                            <p class="text-sm font-semibold text-slate-900">
+                                {{ event.title }}
+                            </p>
+                            <span class="text-xs font-semibold text-emerald-700">
+                                {{ event.progress }}%
+                            </span>
+                        </div>
+                        <div class="mt-3 h-2 w-full rounded-full bg-slate-200">
+                            <div
+                                class="h-2 rounded-full bg-emerald-500"
+                                :style="{ width: `${event.progress}%` }"
+                            ></div>
+                        </div>
+                    </div>
+                    <div
+                        v-if="!progressEvents.length"
+                        class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-500"
+                    >
+                        Nenhum evento com capacidade definida.
+                    </div>
+                </div>
+            </section>
+        </div>
+        <div class="flex flex-1 flex-col gap-6 overflow-x-auto p-4">
             <section class="rounded-2xl border border-sidebar-border/70 bg-white p-6 shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-4">
                     <div>
@@ -165,7 +219,6 @@ watch(monthCursor, () => {
                         </button>
                     </div>
                 </div>
-
                 <div class="mt-6 grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
                     <div>
                         <div class="grid grid-cols-7 gap-2 text-xs font-semibold text-slate-400">
@@ -245,4 +298,3 @@ watch(monthCursor, () => {
         </div>
     </AppLayout>
 </template>
-

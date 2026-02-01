@@ -1,8 +1,19 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 
 import { useTenantUrl } from '@/composables/useTenantUrl';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { index } from '@/routes/eventos';
 
 interface WorkspacePayload {
@@ -14,6 +25,7 @@ interface WorkspacePayload {
 
 interface EventPayload {
     id: number;
+    hash_id: string;
     title: string;
     description: string | null;
     location: string | null;
@@ -21,6 +33,8 @@ interface EventPayload {
     ends_at: string | null;
     status: string;
     is_public: boolean;
+    capacity: number | null;
+    rsvp_count: number;
     cover_url: string | null;
 }
 
@@ -36,6 +50,7 @@ const props = defineProps<{
     photos: EventPhotoPayload[];
 }>();
 
+const page = usePage();
 const { withTenantUrl } = useTenantUrl();
 
 const shareCopied = ref(false);
@@ -58,6 +73,162 @@ const canShare = computed(
 const shareLabel = computed(() =>
     shareCopied.value ? 'Link copiado' : 'Compartilhar',
 );
+
+const termsUrl = computed(
+    () => (page.props.legal as { terms_url?: string | null } | undefined)?.terms_url ?? null,
+);
+
+const isRsvpOpen = ref(false);
+const isSubmitting = ref(false);
+const rsvpStatus = ref<'created' | 'updated' | null>(null);
+const rsvpMessage = ref<string | null>(null);
+const fieldErrors = ref<Record<string, string>>({});
+
+const rsvpForm = ref({
+    name: '',
+    email: '',
+    phone_whatsapp: '',
+    communication_preference: 'email',
+    notifications_scope: 'event_only',
+    accept_terms: false,
+    company: '',
+});
+
+const rsvpUrl = computed(() =>
+    withTenantUrl(`/eventos/${props.event.hash_id}/rsvp`),
+);
+const icsUrl = computed(() =>
+    withTenantUrl(`/eventos/${props.event.hash_id}/calendar.ics`),
+);
+
+const requiresPhone = computed(() =>
+    ['whatsapp', 'sms'].includes(rsvpForm.value.communication_preference),
+);
+
+const canSubmitRsvp = computed(() => {
+    if (requiresPhone.value && !rsvpForm.value.phone_whatsapp.trim()) {
+        return false;
+    }
+
+    if (termsUrl.value && !rsvpForm.value.accept_terms) {
+        return false;
+    }
+
+    return true;
+});
+
+const googleCalendarUrl = computed(() => {
+    if (!props.event.starts_at) {
+        return '';
+    }
+
+    const start = toGoogleDate(props.event.starts_at);
+    const end = toGoogleDate(props.event.ends_at ?? props.event.starts_at);
+    const details = `${props.event.description ?? ''}\n\n${shareUrl.value}`.trim();
+
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+        props.event.title,
+    )}&dates=${start}/${end}&details=${encodeURIComponent(
+        details,
+    )}&location=${encodeURIComponent(props.event.location ?? '')}`;
+});
+
+const outlookCalendarUrl = computed(() => {
+    if (!props.event.starts_at) {
+        return '';
+    }
+
+    const start = toOutlookDate(props.event.starts_at);
+    const end = toOutlookDate(props.event.ends_at ?? props.event.starts_at);
+    const details = `${props.event.description ?? ''}\n\n${shareUrl.value}`.trim();
+
+    return `https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject=${encodeURIComponent(
+        props.event.title,
+    )}&startdt=${encodeURIComponent(start)}&enddt=${encodeURIComponent(
+        end,
+    )}&body=${encodeURIComponent(details)}&location=${encodeURIComponent(
+        props.event.location ?? '',
+    )}`;
+});
+
+async function submitRsvp(): Promise<void> {
+    fieldErrors.value = {};
+    rsvpMessage.value = null;
+
+    if (requiresPhone.value && !rsvpForm.value.phone_whatsapp.trim()) {
+        fieldErrors.value.phone_whatsapp =
+            'Informe o telefone para contato por WhatsApp ou SMS.';
+        return;
+    }
+
+    if (termsUrl.value && !rsvpForm.value.accept_terms) {
+        fieldErrors.value.accept_terms = 'Aceite os termos para continuar.';
+        return;
+    }
+
+    isSubmitting.value = true;
+
+    try {
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content');
+
+        const response = await fetch(rsvpUrl.value, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken ?? '',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify(rsvpForm.value),
+        });
+
+        if (response.status === 422) {
+            const payload = (await response.json()) as {
+                errors?: Record<string, string[]>;
+            };
+
+            fieldErrors.value = Object.fromEntries(
+                Object.entries(payload.errors ?? {}).map(([key, messages]) => [
+                    key,
+                    messages[0],
+                ]),
+            );
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error('failed');
+        }
+
+        const payload = (await response.json()) as {
+            status?: 'created' | 'updated';
+        };
+
+        rsvpStatus.value = payload.status ?? 'created';
+        rsvpMessage.value =
+            rsvpStatus.value === 'updated'
+                ? 'Presenca atualizada com sucesso.'
+                : 'Presenca confirmada com sucesso.';
+    } catch {
+        rsvpMessage.value = 'Nao foi possivel confirmar sua presenca.';
+    } finally {
+        isSubmitting.value = false;
+    }
+}
+
+function toGoogleDate(value: string): string {
+    const normalized = value.replace(' ', 'T');
+    const parsed = new Date(`${normalized}:00`);
+    return parsed.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+}
+
+function toOutlookDate(value: string): string {
+    const normalized = value.replace(' ', 'T');
+    const parsed = new Date(`${normalized}:00`);
+    return parsed.toISOString();
+}
 
 async function handleShare(): Promise<void> {
     if (!canShare.value || !shareUrl.value) {
@@ -109,7 +280,7 @@ async function handleShare(): Promise<void> {
         />
     </Head>
 
-    <div class="landing-page space-y-10">
+    <div class="landing-page space-y-10 bg-white dark:bg-white dark:text-slate-900">
         <section
             class="relative overflow-hidden rounded-3xl border bg-gradient-to-b from-slate-50 via-white to-slate-100 px-6 py-10 shadow-sm sm:px-10 lg:px-16"
         >
@@ -146,6 +317,170 @@ async function handleShare(): Promise<void> {
                         >
                             Voltar para eventos
                         </Link>
+                        <Dialog v-model:open="isRsvpOpen">
+                            <DialogTrigger as-child>
+                                <Button
+                                    class="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
+                                >
+                                    Confirmar presença
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent class="sm:max-w-lg">
+                                <DialogHeader class="space-y-2" v-if="!rsvpStatus">
+                                    <DialogTitle>Confirmar presenca</DialogTitle>
+                                    <DialogDescription>
+                                        Preencha os dados abaixo para garantir sua vaga.
+                                    </DialogDescription>
+                                </DialogHeader>
+
+                                <div v-if="rsvpStatus" class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                                    <p class="font-semibold">{{ rsvpMessage }}</p>
+                                    <p class="mt-1 text-emerald-700">Adicionar ao seu calendario:</p>
+                                    <div class="mt-3 flex flex-wrap gap-2">
+                                        <a
+                                            :href="icsUrl"
+                                            class="rounded-full border border-emerald-200 bg-white px-4 py-2 text-xs font-semibold text-emerald-800"
+                                        >
+                                            Baixar .ics
+                                        </a>
+                                        <a
+                                            v-if="googleCalendarUrl"
+                                            :href="googleCalendarUrl"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="rounded-full border border-emerald-200 bg-white px-4 py-2 text-xs font-semibold text-emerald-800"
+                                        >
+                                            Google Calendar
+                                        </a>
+                                        <a
+                                            v-if="outlookCalendarUrl"
+                                            :href="outlookCalendarUrl"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="rounded-full border border-emerald-200 bg-white px-4 py-2 text-xs font-semibold text-emerald-800"
+                                        >
+                                            Outlook
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <form v-else class="mt-4 space-y-4" @submit.prevent="submitRsvp">
+                                    <div class="space-y-2">
+                                        <Label for="rsvp-name">Nome</Label>
+                                        <Input
+                                            id="rsvp-name"
+                                            v-model="rsvpForm.name"
+                                            type="text"
+                                            placeholder="Seu nome completo"
+                                        />
+                                        <p v-if="fieldErrors.name" class="text-xs text-red-600">
+                                            {{ fieldErrors.name }}
+                                        </p>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label for="rsvp-email">Email</Label>
+                                        <Input
+                                            id="rsvp-email"
+                                            v-model="rsvpForm.email"
+                                            type="email"
+                                            placeholder="voce@email.com"
+                                        />
+                                        <p v-if="fieldErrors.email" class="text-xs text-red-600">
+                                            {{ fieldErrors.email }}
+                                        </p>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label for="rsvp-phone">Whatsapp / SMS (opcional)</Label>
+                                        <Input
+                                            id="rsvp-phone"
+                                            v-model="rsvpForm.phone_whatsapp"
+                                            type="tel"
+                                            placeholder="+55 11 99999-9999"
+                                        />
+                                        <p class="text-xs text-slate-500">
+                                            Se preferir WhatsApp ou SMS, informe o telefone.
+                                        </p>
+                                        <p v-if="fieldErrors.phone_whatsapp" class="text-xs text-red-600">
+                                            {{ fieldErrors.phone_whatsapp }}
+                                        </p>
+                                    </div>
+
+                                    <div class="grid gap-4 sm:grid-cols-2">
+                                        <div class="space-y-2">
+                                            <Label for="rsvp-preference">Preferencia</Label>
+                                            <select
+                                                id="rsvp-preference"
+                                                v-model="rsvpForm.communication_preference"
+                                                class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+                                            >
+                                                <option value="email">Email</option>
+                                                <option value="whatsapp">WhatsApp</option>
+                                                <option value="sms">SMS</option>
+                                            </select>
+                                            <p v-if="fieldErrors.communication_preference" class="text-xs text-red-600">
+                                                {{ fieldErrors.communication_preference }}
+                                            </p>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <Label for="rsvp-scope">Notificacoes</Label>
+                                            <select
+                                                id="rsvp-scope"
+                                                v-model="rsvpForm.notifications_scope"
+                                                class="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
+                                            >
+                                                <option value="event_only">Somente este evento</option>
+                                                <option value="workspace">Eventos do workspace</option>
+                                                <option value="platform">Atualizacoes da plataforma</option>
+                                            </select>
+                                            <p v-if="fieldErrors.notifications_scope" class="text-xs text-red-600">
+                                                {{ fieldErrors.notifications_scope }}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div v-if="termsUrl" class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                                        <label class="flex items-start gap-2">
+                                            <input
+                                                v-model="rsvpForm.accept_terms"
+                                                type="checkbox"
+                                                class="mt-0.5 h-4 w-4 rounded border-slate-300"
+                                            />
+                                            <span>
+                                                Eu li e aceito os
+                                                <a
+                                                    :href="termsUrl"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    class="font-semibold text-slate-900 underline"
+                                                >
+                                                    termos e politica
+                                                </a>
+                                            </span>
+                                        </label>
+                                        <p v-if="fieldErrors.accept_terms" class="mt-2 text-xs text-red-600">
+                                            {{ fieldErrors.accept_terms }}
+                                        </p>
+                                    </div>
+
+                                    <input v-model="rsvpForm.company" type="text" class="hidden" tabindex="-1" autocomplete="off" />
+
+                                    <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+                                        <p v-if="rsvpMessage" class="text-sm text-red-600">
+                                            {{ rsvpMessage }}
+                                        </p>
+                                        <Button
+                                            type="submit"
+                                            class="rounded-full bg-slate-900 px-5 py-2 text-sm font-medium text-white"
+                                            :disabled="isSubmitting || !canSubmitRsvp"
+                                        >
+                                            {{ isSubmitting ? 'Enviando...' : 'Confirmar' }}
+                                        </Button>
+                                    </div>
+                                </form>
+                            </DialogContent>
+                        </Dialog>
                         <button
                             v-if="canShare"
                             type="button"
@@ -170,7 +505,7 @@ async function handleShare(): Promise<void> {
             </div>
         </section>
 
-        <section class="grid gap-8 lg:grid-cols-[1.4fr_0.6fr] lg:items-start">
+        <section class="grid gap-8 lg:grid-cols-[1.4fr_0.6fr] lg:items-start bg-white dark:bg-white dark:text-slate-900">
             <div class="space-y-6">
                 <div class="overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-sm">
                     <img
